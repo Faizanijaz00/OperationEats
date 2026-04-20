@@ -5,7 +5,8 @@ import type {
   Delivery,
   Person,
   Platform,
-  Application
+  Application,
+  VehicleSource
 } from './types';
 import { supabase } from './supabase';
 import { uid } from './utils';
@@ -18,8 +19,8 @@ interface PersonRow { id: string; name: string; skills: string[] | null; }
 interface PlatformRow {
   id: string;
   name: string;
-  role: string;
   variant: string | null;
+  vehicle_source: string | null;
   skills: string[] | null;
   application_notes: string | null;
   general_notes: string | null;
@@ -38,11 +39,12 @@ function mapPerson(r: PersonRow): Person {
   return { id: r.id, name: r.name, skills: r.skills ?? [] };
 }
 function mapPlatform(r: PlatformRow): Platform {
+  const vs = (r.vehicle_source ?? '') as VehicleSource;
   return {
     id: r.id,
     name: r.name,
-    role: r.role,
     variant: r.variant ?? '',
+    vehicleSource: vs === 'own' || vs === 'company' ? vs : '',
     skills: r.skills ?? [],
     applicationNotes: r.application_notes ?? '',
     generalNotes: r.general_notes ?? ''
@@ -280,8 +282,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.from('platforms').insert({
         id,
         name: p.name,
-        role: p.role,
         variant: p.variant,
+        vehicle_source: p.vehicleSource,
         skills: p.skills,
         application_notes: p.applicationNotes,
         general_notes: p.generalNotes
@@ -298,8 +300,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         .from('platforms')
         .update({
           name: p.name,
-          role: p.role,
           variant: p.variant,
+          vehicle_source: p.vehicleSource,
           skills: p.skills,
           application_notes: p.applicationNotes,
           general_notes: p.generalNotes

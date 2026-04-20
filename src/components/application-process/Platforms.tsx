@@ -1,13 +1,14 @@
 import { Fragment, useState } from 'react';
 import { useStore } from '../../state';
 import ChipSelector from '../ChipSelector';
+import { PLATFORM_VARIANTS, type VehicleSource } from '../../types';
 
 export default function Platforms() {
   const { state, addPlatform, updatePlatform, removePlatform } = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [variant, setVariant] = useState('');
-  const [role, setRole] = useState('');
+  const [vehicleSource, setVehicleSource] = useState<VehicleSource>('');
   const [skills, setSkills] = useState<string[]>([]);
   const [applicationNotes, setApplicationNotes] = useState('');
   const [generalNotes, setGeneralNotes] = useState('');
@@ -16,7 +17,7 @@ export default function Platforms() {
     setEditingId(null);
     setName('');
     setVariant('');
-    setRole('');
+    setVehicleSource('');
     setSkills([]);
     setApplicationNotes('');
     setGeneralNotes('');
@@ -27,7 +28,7 @@ export default function Platforms() {
     setEditingId(id);
     setName(j.name);
     setVariant(j.variant);
-    setRole(j.role);
+    setVehicleSource(j.vehicleSource);
     setSkills([...j.skills]);
     setApplicationNotes(j.applicationNotes);
     setGeneralNotes(j.generalNotes);
@@ -41,7 +42,7 @@ export default function Platforms() {
     const payload = {
       name: name.trim(),
       variant: variant.trim(),
-      role: role.trim(),
+      vehicleSource,
       skills,
       applicationNotes: applicationNotes.trim(),
       generalNotes: generalNotes.trim()
@@ -69,18 +70,36 @@ export default function Platforms() {
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Uber Eats"
           />
-          <label>Variant (optional)</label>
-          <input
-            value={variant}
-            onChange={(e) => setVariant(e.target.value)}
-            placeholder="e.g. Car, Van, Motorbike, Cycle"
-          />
-          <label>Role (optional)</label>
-          <input
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            placeholder="e.g. Delivery rider"
-          />
+          <label>Variant</label>
+          <select value={variant} onChange={(e) => setVariant(e.target.value)}>
+            <option value="">—</option>
+            {PLATFORM_VARIANTS.map((v) => (
+              <option key={v} value={v}>
+                {v}
+              </option>
+            ))}
+          </select>
+          <label>Vehicle</label>
+          <div className="toggle-group">
+            <button
+              type="button"
+              className={vehicleSource === 'own' ? 'active' : ''}
+              onClick={() =>
+                setVehicleSource(vehicleSource === 'own' ? '' : 'own')
+              }
+            >
+              Use own vehicle
+            </button>
+            <button
+              type="button"
+              className={vehicleSource === 'company' ? 'active' : ''}
+              onClick={() =>
+                setVehicleSource(vehicleSource === 'company' ? '' : 'company')
+              }
+            >
+              Use company vehicle
+            </button>
+          </div>
           <label>Required skills (tap to toggle)</label>
           <ChipSelector selected={skills} onChange={setSkills} />
           <label>Application process notes</label>
@@ -116,7 +135,7 @@ export default function Platforms() {
                 <tr>
                   <th>Platform</th>
                   <th>Variant</th>
-                  <th>Role</th>
+                  <th>Vehicle</th>
                   <th>Required skills</th>
                   <th>Apps</th>
                   <th></th>
@@ -148,7 +167,11 @@ export default function Platforms() {
                           )}
                         </td>
                         <td>
-                          {j.role || (
+                          {j.vehicleSource === 'own' ? (
+                            <span className="chip">Own</span>
+                          ) : j.vehicleSource === 'company' ? (
+                            <span className="chip">Company</span>
+                          ) : (
                             <span style={{ color: 'var(--muted)' }}>—</span>
                           )}
                         </td>

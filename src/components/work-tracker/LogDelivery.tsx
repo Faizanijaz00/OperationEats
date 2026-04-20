@@ -137,7 +137,6 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
               {availablePlatforms.map((p) => (
                 <option key={p.id} value={p.id}>
                   {platformLabel(p)}
-                  {p.role ? ` (${p.role})` : ''}
                   {historical && p.id === historical.id ? ' (historical)' : ''}
                 </option>
               ))}

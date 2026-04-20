@@ -4,11 +4,15 @@ export interface Person {
   skills: string[];
 }
 
+export type VehicleSource = '' | 'own' | 'company';
+
+export const PLATFORM_VARIANTS = ['Car', 'Van', 'Motorbike', 'Cycle'] as const;
+
 export interface Platform {
   id: string;
   name: string;
-  role: string;
   variant: string;
+  vehicleSource: VehicleSource;
   skills: string[];
   applicationNotes: string;
   generalNotes: string;

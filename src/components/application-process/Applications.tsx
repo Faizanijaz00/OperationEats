@@ -53,7 +53,6 @@ export default function Applications() {
             {state.platforms.map((j) => (
               <option key={j.id} value={j.id}>
                 {platformLabel(j)}
-                {j.role ? ` (${j.role})` : ''}
               </option>
             ))}
           </select>
@@ -107,15 +106,7 @@ export default function Applications() {
                     <td>
                       <strong>{p.name}</strong>
                     </td>
-                    <td>
-                      {platformLabel(j)}
-                      {j.role && (
-                        <span style={{ color: 'var(--muted)' }}>
-                          {' '}
-                          ({j.role})
-                        </span>
-                      )}
-                    </td>
+                    <td>{platformLabel(j)}</td>
                     <td>
                       {missing.length ? (
                         <span style={{ color: 'var(--warn)' }}>

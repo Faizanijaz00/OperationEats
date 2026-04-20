@@ -5,6 +5,7 @@ const SYMBOL: Record<AppStatus, string> = {
   should_apply: '○',
   applying: '◐',
   applied: '●',
+  background_check: '◉',
   accepted: '✓',
   rejected: '✕'
 };
@@ -15,6 +16,7 @@ export default function Overview() {
   const shouldApply = state.apps.filter((a) => a.status === 'should_apply').length;
   const applying = state.apps.filter((a) => a.status === 'applying').length;
   const applied = state.apps.filter((a) => a.status === 'applied').length;
+  const backgroundCheck = state.apps.filter((a) => a.status === 'background_check').length;
   const accepted = state.apps.filter((a) => a.status === 'accepted').length;
   const rejected = state.apps.filter((a) => a.status === 'rejected').length;
   const uncovered = state.platforms.filter(
@@ -59,6 +61,12 @@ export default function Overview() {
             {applied}
           </div>
           <div className="lbl">Awaiting reply</div>
+        </div>
+        <div className="stat">
+          <div className="num" style={{ color: 'var(--violet)' }}>
+            {backgroundCheck}
+          </div>
+          <div className="lbl">Background check</div>
         </div>
         <div className="stat">
           <div className="num" style={{ color: 'var(--good)' }}>
@@ -152,10 +160,11 @@ export default function Overview() {
           <span className="cell should_apply">○</span> Should apply &nbsp;
           <span className="cell applying">◐</span> Applying &nbsp;
           <span className="cell applied">●</span> Applied &nbsp;
+          <span className="cell background_check">◉</span> Background check &nbsp;
           <span className="cell accepted">✓</span> Accepted &nbsp;
           <span className="cell rejected">✕</span> Rejected &nbsp;
           <span className="cell empty">—</span> Eligible, not logged &nbsp;
-          <span className="cell blocked">⊘</span> Missing required skills
+          <span className="cell blocked">⊘</span> Missing skills
         </div>
       </div>
 
@@ -172,6 +181,7 @@ export default function Overview() {
                   <th className="col-should_apply">Should apply</th>
                   <th className="col-applying">Applying</th>
                   <th className="col-applied">Awaiting</th>
+                  <th className="col-background_check">Bg check</th>
                   <th className="col-accepted">Accepted</th>
                   <th className="col-rejected">Rejected</th>
                 </tr>
@@ -210,6 +220,7 @@ export default function Overview() {
                       {cell('should_apply')}
                       {cell('applying')}
                       {cell('applied')}
+                      {cell('background_check')}
                       {cell('accepted')}
                       {cell('rejected')}
                     </tr>

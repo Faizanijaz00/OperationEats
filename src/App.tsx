@@ -3,13 +3,12 @@ import Overview from './components/application-process/Overview';
 import People from './components/application-process/People';
 import Platforms from './components/application-process/Platforms';
 import Applications from './components/application-process/Applications';
-import Skills from './components/application-process/Skills';
 import LogDelivery from './components/work-tracker/LogDelivery';
 import Deliveries from './components/work-tracker/Deliveries';
 import { useStore } from './state';
 
 type Mode = 'app' | 'work';
-type AppTab = 'overview' | 'people' | 'platforms' | 'applications' | 'skills';
+type AppTab = 'overview' | 'people' | 'platforms' | 'applications';
 type WorkTab = 'log' | 'list';
 
 export default function App() {
@@ -102,19 +101,12 @@ export default function App() {
             >
               Applications
             </button>
-            <button
-              className={appTab === 'skills' ? 'active' : ''}
-              onClick={() => setAppTab('skills')}
-            >
-              Skills
-            </button>
           </nav>
           <main>
             {appTab === 'overview' && <Overview />}
             {appTab === 'people' && <People />}
             {appTab === 'platforms' && <Platforms />}
             {appTab === 'applications' && <Applications />}
-            {appTab === 'skills' && <Skills />}
           </main>
         </div>
       )}

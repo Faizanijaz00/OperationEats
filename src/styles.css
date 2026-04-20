@@ -10,6 +10,7 @@
   --good: #4ade80;
   --bad: #f87171;
   --warn: #fbbf24;
+  --violet: #a78bfa;
 }
 * {
   box-sizing: border-box;
@@ -294,6 +295,10 @@ tr:hover td {
   background: rgba(251, 191, 36, 0.15);
   color: var(--warn);
 }
+.status.background_check {
+  background: rgba(167, 139, 250, 0.15);
+  color: var(--violet);
+}
 .status.accepted {
   background: rgba(74, 222, 128, 0.15);
   color: var(--good);
@@ -356,6 +361,9 @@ tr:hover td {
 }
 .cell.applied {
   color: var(--warn);
+}
+.cell.background_check {
+  color: var(--violet);
 }
 .cell.accepted {
   color: var(--good);
@@ -446,6 +454,7 @@ tr:hover td.cell-missing-skills {
 .by-platform-table th.col-should_apply { color: var(--muted); }
 .by-platform-table th.col-applying { color: var(--accent-2); }
 .by-platform-table th.col-applied { color: var(--warn); }
+.by-platform-table th.col-background_check { color: var(--violet); }
 .by-platform-table th.col-accepted { color: var(--good); }
 .by-platform-table th.col-rejected { color: var(--bad); }
 

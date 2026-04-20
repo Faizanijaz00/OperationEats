@@ -24,6 +24,7 @@ export type AppStatus =
   | 'should_apply'
   | 'applying'
   | 'applied'
+  | 'background_check'
   | 'accepted'
   | 'rejected';
 
@@ -31,6 +32,7 @@ export const APP_STATUS_OPTIONS: { value: AppStatus; label: string }[] = [
   { value: 'should_apply', label: 'Should apply' },
   { value: 'applying', label: 'Applying' },
   { value: 'applied', label: 'Applied' },
+  { value: 'background_check', label: 'Background check' },
   { value: 'accepted', label: 'Accepted' },
   { value: 'rejected', label: 'Rejected' }
 ];

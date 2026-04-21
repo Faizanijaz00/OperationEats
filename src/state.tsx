@@ -29,9 +29,17 @@ interface ApplicationRow {
   id: string; person_id: string; platform_id: string; status: string; date: string;
 }
 interface DeliveryRow {
-  id: string; person_id: string; platform_id: string; date: string;
-  restaurant: string; collection: string; notes: string;
-  time_period: string; busyness: string; area: string;
+  id: string;
+  person_id: string;
+  account_owner_id: string | null;
+  platform_id: string;
+  date: string;
+  restaurant: string;
+  collection: string;
+  notes: string;
+  time_period: string;
+  busyness: string;
+  area: string;
 }
 interface SkillRow { name: string; }
 
@@ -63,6 +71,7 @@ function mapDelivery(r: DeliveryRow): Delivery {
   return {
     id: r.id,
     personId: r.person_id,
+    accountOwnerId: r.account_owner_id ?? null,
     platformId: r.platform_id,
     date: r.date || '',
     restaurant: r.restaurant || '',
@@ -387,6 +396,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.from('deliveries').insert({
         id,
         person_id: d.personId,
+        account_owner_id: d.accountOwnerId,
         platform_id: d.platformId,
         date: d.date,
         restaurant: d.restaurant,
@@ -408,6 +418,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         .from('deliveries')
         .update({
           person_id: d.personId,
+          account_owner_id: d.accountOwnerId,
           platform_id: d.platformId,
           date: d.date,
           restaurant: d.restaurant,

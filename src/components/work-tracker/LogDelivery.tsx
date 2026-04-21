@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../../state';
-import { today } from '../../utils';
 import { platformLabel } from '../../types';
 
 interface Props {
@@ -10,9 +9,9 @@ interface Props {
 
 export default function LogDelivery({ editingId, onDoneEditing }: Props) {
   const { state, addDelivery, updateDelivery } = useStore();
-  const [personId, setPersonId] = useState('');
   const [platformId, setPlatformId] = useState('');
-  const [date, setDate] = useState(today());
+  const [accountOwnerId, setAccountOwnerId] = useState<string | null>(null);
+  const [personId, setPersonId] = useState('');
   const [restaurant, setRestaurant] = useState('');
   const [collection, setCollection] = useState('');
   const [notes, setNotes] = useState('');
@@ -24,9 +23,9 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
     if (editingId) {
       const d = state.deliveries.find((x) => x.id === editingId);
       if (d) {
-        setPersonId(d.personId);
         setPlatformId(d.platformId);
-        setDate(d.date);
+        setAccountOwnerId(d.accountOwnerId);
+        setPersonId(d.personId);
         setRestaurant(d.restaurant);
         setCollection(d.collection);
         setNotes(d.notes);
@@ -38,30 +37,46 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingId]);
 
-  const acceptedPlatforms = personId
-    ? state.platforms.filter((p) =>
+  // Platforms with at least one accepted applicant
+  const platformsWithAccepted = state.platforms.filter((p) =>
+    state.apps.some((a) => a.platformId === p.id && a.status === 'accepted')
+  );
+  // If editing and the saved platform is no longer in that list, include it as historical
+  const historicalPlatform =
+    editingId &&
+    platformId &&
+    !platformsWithAccepted.some((p) => p.id === platformId)
+      ? state.platforms.find((p) => p.id === platformId)
+      : undefined;
+  const availablePlatforms = historicalPlatform
+    ? [...platformsWithAccepted, historicalPlatform]
+    : platformsWithAccepted;
+
+  // People who have an accepted application on the selected platform
+  const possibleOwners = platformId
+    ? state.people.filter((p) =>
         state.apps.some(
           (a) =>
-            a.personId === personId &&
-            a.platformId === p.id &&
+            a.platformId === platformId &&
+            a.personId === p.id &&
             a.status === 'accepted'
         )
       )
     : [];
-
-  const historical =
-    editingId && platformId && !acceptedPlatforms.some((p) => p.id === platformId)
-      ? state.platforms.find((p) => p.id === platformId)
+  const historicalOwner =
+    editingId &&
+    accountOwnerId &&
+    !possibleOwners.some((p) => p.id === accountOwnerId)
+      ? state.people.find((p) => p.id === accountOwnerId)
       : undefined;
-
-  const availablePlatforms = historical
-    ? [...acceptedPlatforms, historical]
-    : acceptedPlatforms;
+  const availableOwners = historicalOwner
+    ? [...possibleOwners, historicalOwner]
+    : possibleOwners;
 
   function reset() {
-    setPersonId('');
     setPlatformId('');
-    setDate(today());
+    setAccountOwnerId(null);
+    setPersonId('');
     setRestaurant('');
     setCollection('');
     setNotes('');
@@ -72,14 +87,29 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
   }
 
   function submit() {
-    if (!personId || !platformId) {
-      alert('Pick a person and a platform');
+    if (!platformId) {
+      alert('Pick a platform');
       return;
     }
+    if (!accountOwnerId) {
+      alert('Pick whose account was used');
+      return;
+    }
+    if (!personId) {
+      alert('Pick who delivered');
+      return;
+    }
+    // When creating new, stamp the current timestamp.
+    // When editing, keep the original timestamp.
+    const existing = editingId
+      ? state.deliveries.find((x) => x.id === editingId)
+      : undefined;
+    const date = existing?.date || new Date().toISOString();
     const rec = {
       personId,
+      accountOwnerId,
       platformId,
-      date: date || today(),
+      date,
       restaurant: restaurant.trim(),
       collection: collection.trim(),
       notes: notes.trim(),
@@ -105,52 +135,69 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
         <h3>Delivery Template</h3>
         <div className="grid-fields">
           <div>
-            <label>Who delivered</label>
-            <select
-              value={personId}
-              onChange={(e) => {
-                setPersonId(e.target.value);
-                setPlatformId('');
-              }}
-            >
-              <option value="">Select person…</option>
-              {state.people.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
             <label>Platform</label>
             <select
               value={platformId}
-              onChange={(e) => setPlatformId(e.target.value)}
+              onChange={(e) => {
+                setPlatformId(e.target.value);
+                setAccountOwnerId(null);
+              }}
             >
               <option value="">
-                {!personId
-                  ? 'Select person first…'
-                  : availablePlatforms.length
-                    ? 'Select platform…'
-                    : 'No accepted platforms for this person'}
+                {availablePlatforms.length
+                  ? 'Select platform…'
+                  : 'No platforms with accepted applicants yet'}
               </option>
               {availablePlatforms.map((p) => (
                 <option key={p.id} value={p.id}>
                   {platformLabel(p)}
-                  {historical && p.id === historical.id ? ' (historical)' : ''}
+                  {historicalPlatform && p.id === historicalPlatform.id
+                    ? ' (historical)'
+                    : ''}
                 </option>
               ))}
             </select>
           </div>
           <div>
-            <label>Date</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
+            <label>Whose account</label>
+            <select
+              value={accountOwnerId ?? ''}
+              onChange={(e) => setAccountOwnerId(e.target.value || null)}
+              disabled={!platformId}
+            >
+              <option value="">
+                {!platformId
+                  ? 'Select platform first…'
+                  : availableOwners.length
+                    ? 'Select account owner…'
+                    : 'Nobody accepted on this platform'}
+              </option>
+              {availableOwners.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                  {historicalOwner && p.id === historicalOwner.id
+                    ? ' (historical)'
+                    : ''}
+                </option>
+              ))}
+            </select>
           </div>
-          <div>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label>Who delivered</label>
+            <select
+              value={personId}
+              onChange={(e) => setPersonId(e.target.value)}
+            >
+              <option value="">Select deliverer…</option>
+              {state.people.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                  {p.id === accountOwnerId ? ' (same as account owner)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={{ gridColumn: '1 / -1' }}>
             <label>Takeaway / Restaurant</label>
             <input
               value={restaurant}
@@ -213,6 +260,18 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
             />
           </div>
         </div>
+
+        {!editingId && (
+          <p
+            style={{
+              fontSize: 11,
+              color: 'var(--muted)',
+              margin: '8px 0 0 0'
+            }}
+          >
+            Date &amp; time are recorded automatically when you log the delivery.
+          </p>
+        )}
 
         <div className="row-flex" style={{ marginTop: 10 }}>
           <button type="submit" className="primary">

@@ -22,7 +22,28 @@ export default function Deliveries({ onEdit }: Props) {
   let items = [...state.deliveries];
   if (fPerson) items = items.filter((d) => d.personId === fPerson);
   if (fPlatform) items = items.filter((d) => d.platformId === fPlatform);
-  items.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  items.sort((a, b) => {
+    const ta = new Date(a.date).getTime() || 0;
+    const tb = new Date(b.date).getTime() || 0;
+    return tb - ta;
+  });
+
+  function formatDate(s: string): string {
+    if (!s) return '';
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return s;
+    // If it's just a YYYY-MM-DD string, show just the date (no fake midnight time)
+    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(s);
+    return dateOnly
+      ? d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+      : d.toLocaleString(undefined, {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+  }
 
   const all = state.deliveries;
 
@@ -88,18 +109,28 @@ export default function Deliveries({ onEdit }: Props) {
         </div>
       ) : (
         items.map((d) => {
-          const p = state.people.find((x) => x.id === d.personId);
+          const deliverer = state.people.find((x) => x.id === d.personId);
+          const owner = d.accountOwnerId
+            ? state.people.find((x) => x.id === d.accountOwnerId)
+            : null;
           const j = state.platforms.find((x) => x.id === d.platformId);
           const busyLabel = BUSY_LABEL[d.busyness] || '';
+          const sameOwner =
+            owner && deliverer && owner.id === deliverer.id;
           return (
             <div key={d.id} className="delivery-card">
               <div className="delivery-header">
                 <strong style={{ fontSize: 14 }}>
-                  {p?.name ?? '(removed)'}
+                  {deliverer?.name ?? '(removed)'}
                 </strong>
+                {owner && !sameOwner && (
+                  <span style={{ color: 'var(--muted)', fontSize: 12 }}>
+                    on {owner.name}'s account
+                  </span>
+                )}
                 <span style={{ color: 'var(--muted)' }}>@</span>
                 <strong>{j ? platformLabel(j) : '(removed)'}</strong>
-                <span className="chip">{d.date}</span>
+                <span className="chip">{formatDate(d.date)}</span>
                 {d.timePeriod && <span className="chip">{d.timePeriod}</span>}
                 {busyLabel && (
                   <span className={`chip busy-${d.busyness}`}>

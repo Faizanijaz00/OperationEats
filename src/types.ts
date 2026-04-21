@@ -52,6 +52,7 @@ export interface Application {
 export interface Delivery {
   id: string;
   personId: string;
+  accountOwnerId: string | null;
   platformId: string;
   date: string;
   restaurant: string;

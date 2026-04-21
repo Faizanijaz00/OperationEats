@@ -7,6 +7,8 @@ interface Props {
   onDoneEditing: () => void;
 }
 
+type Toast = { type: 'success' | 'error'; message: string } | null;
+
 export default function LogDelivery({ editingId, onDoneEditing }: Props) {
   const { state, addDelivery, updateDelivery } = useStore();
   const [platformId, setPlatformId] = useState('');
@@ -18,6 +20,13 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
   const [timePeriod, setTimePeriod] = useState('');
   const [busyness, setBusyness] = useState('');
   const [area, setArea] = useState('');
+  const [toast, setToast] = useState<Toast>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3500);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   useEffect(() => {
     if (editingId) {
@@ -86,7 +95,7 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
     if (editingId) onDoneEditing();
   }
 
-  function submit() {
+  async function submit() {
     if (!platformId) {
       alert('Pick a platform');
       return;
@@ -117,13 +126,35 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
       busyness,
       area: area.trim()
     };
-    if (editingId) updateDelivery(editingId, rec);
-    else addDelivery(rec);
+    const isEdit = !!editingId;
+    const err = isEdit
+      ? await updateDelivery(editingId!, rec)
+      : await addDelivery(rec);
+    if (err) {
+      setToast({
+        type: 'error',
+        message: `Failed to ${isEdit ? 'update' : 'log'} delivery: ${err}`
+      });
+      return;
+    }
+    setToast({
+      type: 'success',
+      message: isEdit ? 'Delivery updated ✓' : 'Delivery logged ✓'
+    });
     reset();
   }
 
   return (
     <>
+      {toast && (
+        <div
+          className={`toast toast-${toast.type}`}
+          role="status"
+          onClick={() => setToast(null)}
+        >
+          {toast.message}
+        </div>
+      )}
       <h2>{editingId ? 'Edit Delivery' : 'Log a Delivery'}</h2>
       <form
         className="card"

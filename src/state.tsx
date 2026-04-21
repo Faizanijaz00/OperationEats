@@ -112,8 +112,8 @@ interface StoreAPI {
   ) => Promise<void>;
   updateAppStatus: (id: string, status: AppStatus) => Promise<void>;
   removeApp: (id: string) => Promise<void>;
-  addDelivery: (d: Omit<Delivery, 'id'>) => Promise<void>;
-  updateDelivery: (id: string, d: Omit<Delivery, 'id'>) => Promise<void>;
+  addDelivery: (d: Omit<Delivery, 'id'>) => Promise<string | null>;
+  updateDelivery: (id: string, d: Omit<Delivery, 'id'>) => Promise<string | null>;
   removeDelivery: (id: string) => Promise<void>;
 }
 
@@ -406,7 +406,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         busyness: d.busyness,
         area: d.area
       });
-      if (error) logErr('addDelivery', error);
+      if (error) {
+        logErr('addDelivery', error);
+        setState((prev) => ({
+          ...prev,
+          deliveries: prev.deliveries.filter((w) => w.id !== id)
+        }));
+        return error.message;
+      }
+      return null;
     },
 
     async updateDelivery(id, d) {
@@ -429,7 +437,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           area: d.area
         })
         .eq('id', id);
-      if (error) logErr('updateDelivery', error);
+      if (error) {
+        logErr('updateDelivery', error);
+        return error.message;
+      }
+      return null;
     },
 
     async removeDelivery(id) {

@@ -517,6 +517,49 @@ tr:hover td.cell-missing-skills {
   font-style: italic;
 }
 
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f1115;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: toast-in 0.2s ease-out, toast-out 0.4s ease-in 3.1s forwards;
+  max-width: 360px;
+}
+.toast-success {
+  background: var(--good);
+}
+.toast-error {
+  background: var(--bad);
+  color: #fff;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+}
+
 .busy-1 {
   color: #60a5fa;
 }

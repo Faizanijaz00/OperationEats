@@ -364,6 +364,31 @@ tr:hover td {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+.stat.stat-accepted {
+  background: linear-gradient(
+    135deg,
+    rgba(74, 222, 128, 0.16),
+    rgba(74, 222, 128, 0.05)
+  );
+  border-color: rgba(74, 222, 128, 0.55);
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.12);
+}
+.stat.stat-accepted .num {
+  color: var(--good);
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stat.stat-accepted .lbl {
+  color: var(--good);
+  font-weight: 700;
+}
+.stat-accepted-tick {
+  color: var(--good);
+  font-size: 22px;
+  font-weight: 900;
+}
 .matrix {
   overflow-x: auto;
 }
@@ -395,6 +420,13 @@ tr:hover td {
 }
 .cell.accepted {
   color: var(--good);
+  font-weight: 700;
+  font-size: 18px;
+  background: rgba(74, 222, 128, 0.14);
+  border-radius: 6px;
+  padding: 1px 8px;
+  display: inline-block;
+  box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.4);
 }
 .cell.rejected {
   color: var(--bad);
@@ -483,7 +515,35 @@ tr:hover td.cell-missing-skills {
 .by-platform-table th.col-applying { color: var(--accent-2); }
 .by-platform-table th.col-applied { color: var(--warn); }
 .by-platform-table th.col-background_check { color: var(--violet); }
-.by-platform-table th.col-accepted { color: var(--good); }
+.by-platform-table th.col-accepted {
+  color: var(--good);
+  font-weight: 700;
+  font-size: 11px;
+  background: rgba(74, 222, 128, 0.08);
+  border-bottom: 2px solid var(--good);
+}
+.by-platform-table td.col-accepted-cell {
+  background: rgba(74, 222, 128, 0.06);
+  border-left: 1px solid rgba(74, 222, 128, 0.25);
+  border-right: 1px solid rgba(74, 222, 128, 0.25);
+}
+.chip.chip-accepted {
+  background: rgba(74, 222, 128, 0.18);
+  border-color: rgba(74, 222, 128, 0.5);
+  color: var(--good);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.15);
+}
+.chip-accepted-tick {
+  color: var(--good);
+  font-weight: 900;
+  font-size: 12px;
+}
 .by-platform-table th.col-rejected { color: var(--bad); }
 
 .coverage-row {

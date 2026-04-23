@@ -68,8 +68,9 @@ export default function Overview() {
           </div>
           <div className="lbl">Background check</div>
         </div>
-        <div className="stat">
-          <div className="num" style={{ color: 'var(--good)' }}>
+        <div className="stat stat-accepted">
+          <div className="num">
+            <span className="stat-accepted-tick">✓</span>
             {accepted}
           </div>
           <div className="lbl">Accepted</div>
@@ -191,16 +192,25 @@ export default function Overview() {
                   const apps = state.apps.filter((a) => a.platformId === j.id);
                   const cell = (s: AppStatus) => {
                     const rows = apps.filter((a) => a.status === s);
+                    const isAccepted = s === 'accepted';
+                    const tdClass = isAccepted ? 'col-accepted-cell' : '';
+                    const chipClass = isAccepted ? 'chip chip-accepted' : 'chip';
                     return rows.length ? (
-                      <td>
+                      <td className={tdClass}>
                         {rows.map((a) => (
-                          <span key={a.id} className="chip">
+                          <span key={a.id} className={chipClass}>
+                            {isAccepted && (
+                              <span className="chip-accepted-tick">✓</span>
+                            )}
                             {nameOf(a.personId)}
                           </span>
                         ))}
                       </td>
                     ) : (
-                      <td style={{ color: '#3a4050', textAlign: 'center' }}>
+                      <td
+                        className={tdClass}
+                        style={{ color: '#3a4050', textAlign: 'center' }}
+                      >
                         —
                       </td>
                     );

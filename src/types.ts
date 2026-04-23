@@ -68,15 +68,16 @@ export const HANDOVER_METHODS = [
 
 export interface Delivery {
   id: string;
-  personId: string;
+  personId: string | null;
   accountOwnerId: string | null;
-  platformId: string;
+  platformId: string | null;
   date: string;
   restaurant: string;
   collection: string;
   handover: string;
   notes: string;
-  timePeriod: string;
+  startTime: string;
+  endTime: string;
   busyness: string;
   area: string;
 }

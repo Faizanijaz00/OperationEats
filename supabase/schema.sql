@@ -37,15 +37,16 @@ create table if not exists applications (
 
 create table if not exists deliveries (
   id text primary key,
-  person_id text not null references people(id) on delete cascade,
+  person_id text references people(id) on delete cascade,
   account_owner_id text references people(id) on delete set null,
-  platform_id text not null references platforms(id) on delete cascade,
+  platform_id text references platforms(id) on delete cascade,
   date text not null default '',
   restaurant text not null default '',
   collection text not null default '',
   handover text not null default '',
   notes text not null default '',
-  time_period text not null default '',
+  start_time text not null default '',
+  end_time text not null default '',
   busyness text not null default '',
   area text not null default ''
 );
@@ -62,6 +63,10 @@ alter table platforms add column if not exists process_steps jsonb not null defa
 
 alter table deliveries add column if not exists account_owner_id text references people(id) on delete set null;
 alter table deliveries add column if not exists handover text not null default '';
+alter table deliveries add column if not exists start_time text not null default '';
+alter table deliveries add column if not exists end_time text not null default '';
+alter table deliveries alter column person_id drop not null;
+alter table deliveries alter column platform_id drop not null;
 
 -- ============================================================
 -- Disable RLS — shared data, no auth

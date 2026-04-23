@@ -32,15 +32,16 @@ interface ApplicationRow {
 }
 interface DeliveryRow {
   id: string;
-  person_id: string;
+  person_id: string | null;
   account_owner_id: string | null;
-  platform_id: string;
+  platform_id: string | null;
   date: string;
   restaurant: string;
   collection: string;
   handover: string | null;
   notes: string;
-  time_period: string;
+  start_time: string | null;
+  end_time: string | null;
   busyness: string;
   area: string;
 }
@@ -84,15 +85,16 @@ function mapApplication(r: ApplicationRow): Application {
 function mapDelivery(r: DeliveryRow): Delivery {
   return {
     id: r.id,
-    personId: r.person_id,
+    personId: r.person_id ?? null,
     accountOwnerId: r.account_owner_id ?? null,
-    platformId: r.platform_id,
+    platformId: r.platform_id ?? null,
     date: r.date || '',
     restaurant: r.restaurant || '',
     collection: r.collection || '',
     handover: r.handover || '',
     notes: r.notes || '',
-    timePeriod: r.time_period || '',
+    startTime: r.start_time || '',
+    endTime: r.end_time || '',
     busyness: r.busyness || '',
     area: r.area || ''
   };
@@ -435,7 +437,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         collection: d.collection,
         handover: d.handover,
         notes: d.notes,
-        time_period: d.timePeriod,
+        start_time: d.startTime,
+        end_time: d.endTime,
         busyness: d.busyness,
         area: d.area
       });
@@ -466,7 +469,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           collection: d.collection,
           handover: d.handover,
           notes: d.notes,
-          time_period: d.timePeriod,
+          start_time: d.startTime,
+          end_time: d.endTime,
           busyness: d.busyness,
           area: d.area
         })

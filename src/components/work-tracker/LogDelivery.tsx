@@ -18,7 +18,8 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
   const [collection, setCollection] = useState('');
   const [handover, setHandover] = useState('');
   const [notes, setNotes] = useState('');
-  const [timePeriod, setTimePeriod] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [busyness, setBusyness] = useState('');
   const [area, setArea] = useState('');
   const [toast, setToast] = useState<Toast>(null);
@@ -33,14 +34,15 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
     if (editingId) {
       const d = state.deliveries.find((x) => x.id === editingId);
       if (d) {
-        setPlatformId(d.platformId);
+        setPlatformId(d.platformId ?? '');
         setAccountOwnerId(d.accountOwnerId);
-        setPersonId(d.personId);
+        setPersonId(d.personId ?? '');
         setRestaurant(d.restaurant);
         setCollection(d.collection);
         setHandover(d.handover);
         setNotes(d.notes);
-        setTimePeriod(d.timePeriod);
+        setStartTime(d.startTime);
+        setEndTime(d.endTime);
         setBusyness(d.busyness);
         setArea(d.area);
       }
@@ -92,25 +94,14 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
     setCollection('');
     setHandover('');
     setNotes('');
-    setTimePeriod('');
+    setStartTime('');
+    setEndTime('');
     setBusyness('');
     setArea('');
     if (editingId) onDoneEditing();
   }
 
   async function submit() {
-    if (!platformId) {
-      alert('Pick a platform');
-      return;
-    }
-    if (!accountOwnerId) {
-      alert('Pick whose account was used');
-      return;
-    }
-    if (!personId) {
-      alert('Pick who delivered');
-      return;
-    }
     // When creating new, stamp the current timestamp.
     // When editing, keep the original timestamp.
     const existing = editingId
@@ -118,15 +109,16 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
       : undefined;
     const date = existing?.date || new Date().toISOString();
     const rec = {
-      personId,
+      personId: personId || null,
       accountOwnerId,
-      platformId,
+      platformId: platformId || null,
       date,
       restaurant: restaurant.trim(),
       collection: collection.trim(),
       handover,
       notes: notes.trim(),
-      timePeriod,
+      startTime,
+      endTime,
       busyness,
       area: area.trim()
     };
@@ -269,21 +261,23 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
         <h3 style={{ marginTop: 20 }}>Optional Context</h3>
         <div className="grid-fields">
           <div>
-            <label>Time period</label>
-            <select
-              value={timePeriod}
-              onChange={(e) => setTimePeriod(e.target.value)}
-            >
-              <option value="">—</option>
-              <option value="Breakfast">Breakfast (06–10)</option>
-              <option value="Lunch">Lunch (11–14)</option>
-              <option value="Afternoon">Afternoon (14–17)</option>
-              <option value="Dinner">Dinner (17–21)</option>
-              <option value="Late night">Late night (21–02)</option>
-            </select>
+            <label>Start time</label>
+            <input
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+            />
           </div>
           <div>
-            <label>Busyness</label>
+            <label>End time</label>
+            <input
+              type="time"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+            />
+          </div>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label>Busyness of the shop</label>
             <select
               value={busyness}
               onChange={(e) => setBusyness(e.target.value)}
@@ -314,7 +308,8 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
               margin: '8px 0 0 0'
             }}
           >
-            Date &amp; time are recorded automatically when you log the delivery.
+            Every field is optional. Log date is recorded automatically when you
+            submit.
           </p>
         )}
 

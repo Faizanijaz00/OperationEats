@@ -19,6 +19,7 @@ export default function Deliveries({ onEdit }: Props) {
   const [fPerson, setFPerson] = useState('');
   const [fPlatform, setFPlatform] = useState('');
 
+  const all = state.deliveries;
   let items = [...state.deliveries];
   if (fPerson) items = items.filter((d) => d.personId === fPerson);
   if (fPlatform) items = items.filter((d) => d.platformId === fPlatform);
@@ -27,6 +28,12 @@ export default function Deliveries({ onEdit }: Props) {
     const tb = new Date(b.date).getTime() || 0;
     return tb - ta;
   });
+  const activeDelivererCount = new Set(
+    all.filter((d) => d.personId).map((d) => d.personId)
+  ).size;
+  const platformsUsedCount = new Set(
+    all.filter((d) => d.platformId).map((d) => d.platformId)
+  ).size;
 
   function formatDate(s: string): string {
     if (!s) return '';
@@ -45,8 +52,6 @@ export default function Deliveries({ onEdit }: Props) {
         });
   }
 
-  const all = state.deliveries;
-
   return (
     <>
       <h2>All Deliveries</h2>
@@ -56,11 +61,11 @@ export default function Deliveries({ onEdit }: Props) {
           <div className="lbl">Total deliveries</div>
         </div>
         <div className="stat">
-          <div className="num">{new Set(all.map((d) => d.personId)).size}</div>
+          <div className="num">{activeDelivererCount}</div>
           <div className="lbl">Active deliverers</div>
         </div>
         <div className="stat">
-          <div className="num">{new Set(all.map((d) => d.platformId)).size}</div>
+          <div className="num">{platformsUsedCount}</div>
           <div className="lbl">Platforms used</div>
         </div>
         <div className="stat">
@@ -109,29 +114,45 @@ export default function Deliveries({ onEdit }: Props) {
         </div>
       ) : (
         items.map((d) => {
-          const deliverer = state.people.find((x) => x.id === d.personId);
+          const deliverer = d.personId
+            ? state.people.find((x) => x.id === d.personId)
+            : null;
           const owner = d.accountOwnerId
             ? state.people.find((x) => x.id === d.accountOwnerId)
             : null;
-          const j = state.platforms.find((x) => x.id === d.platformId);
+          const j = d.platformId
+            ? state.platforms.find((x) => x.id === d.platformId)
+            : null;
           const busyLabel = BUSY_LABEL[d.busyness] || '';
           const sameOwner =
             owner && deliverer && owner.id === deliverer.id;
+          const delivererLabel = !d.personId
+            ? '—'
+            : (deliverer?.name ?? '(removed)');
+          const platformLabelText = !d.platformId
+            ? '—'
+            : (j ? platformLabel(j) : '(removed)');
+          const timeChip =
+            d.startTime && d.endTime
+              ? `${d.startTime} → ${d.endTime}`
+              : d.startTime
+                ? `from ${d.startTime}`
+                : d.endTime
+                  ? `until ${d.endTime}`
+                  : '';
           return (
             <div key={d.id} className="delivery-card">
               <div className="delivery-header">
-                <strong style={{ fontSize: 14 }}>
-                  {deliverer?.name ?? '(removed)'}
-                </strong>
+                <strong style={{ fontSize: 14 }}>{delivererLabel}</strong>
                 {owner && !sameOwner && (
                   <span style={{ color: 'var(--muted)', fontSize: 12 }}>
                     on {owner.name}'s account
                   </span>
                 )}
                 <span style={{ color: 'var(--muted)' }}>@</span>
-                <strong>{j ? platformLabel(j) : '(removed)'}</strong>
+                <strong>{platformLabelText}</strong>
                 <span className="chip">{formatDate(d.date)}</span>
-                {d.timePeriod && <span className="chip">{d.timePeriod}</span>}
+                {timeChip && <span className="chip">🕒 {timeChip}</span>}
                 {busyLabel && (
                   <span className={`chip busy-${d.busyness}`}>
                     ● {busyLabel}

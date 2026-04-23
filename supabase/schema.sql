@@ -43,6 +43,7 @@ create table if not exists deliveries (
   date text not null default '',
   restaurant text not null default '',
   collection text not null default '',
+  handover text not null default '',
   notes text not null default '',
   time_period text not null default '',
   busyness text not null default '',
@@ -60,6 +61,7 @@ alter table platforms add column if not exists general_notes text not null defau
 alter table platforms add column if not exists process_steps jsonb not null default '[]'::jsonb;
 
 alter table deliveries add column if not exists account_owner_id text references people(id) on delete set null;
+alter table deliveries add column if not exists handover text not null default '';
 
 -- ============================================================
 -- Disable RLS — shared data, no auth

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../../state';
-import { platformLabel } from '../../types';
+import { HANDOVER_METHODS, platformLabel } from '../../types';
 
 interface Props {
   editingId: string | null;
@@ -16,6 +16,7 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
   const [personId, setPersonId] = useState('');
   const [restaurant, setRestaurant] = useState('');
   const [collection, setCollection] = useState('');
+  const [handover, setHandover] = useState('');
   const [notes, setNotes] = useState('');
   const [timePeriod, setTimePeriod] = useState('');
   const [busyness, setBusyness] = useState('');
@@ -37,6 +38,7 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
         setPersonId(d.personId);
         setRestaurant(d.restaurant);
         setCollection(d.collection);
+        setHandover(d.handover);
         setNotes(d.notes);
         setTimePeriod(d.timePeriod);
         setBusyness(d.busyness);
@@ -88,6 +90,7 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
     setPersonId('');
     setRestaurant('');
     setCollection('');
+    setHandover('');
     setNotes('');
     setTimePeriod('');
     setBusyness('');
@@ -121,6 +124,7 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
       date,
       restaurant: restaurant.trim(),
       collection: collection.trim(),
+      handover,
       notes: notes.trim(),
       timePeriod,
       busyness,
@@ -244,6 +248,16 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
           onChange={(e) => setCollection(e.target.value)}
           placeholder="Waited at counter 5 min, handed bag by staff, sealed, no issues…"
         />
+
+        <label>How the item was delivered</label>
+        <select value={handover} onChange={(e) => setHandover(e.target.value)}>
+          <option value="">—</option>
+          {HANDOVER_METHODS.map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
+        </select>
 
         <label>Key notes</label>
         <textarea

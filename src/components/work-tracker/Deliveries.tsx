@@ -165,6 +165,12 @@ export default function Deliveries({ onEdit }: Props) {
                   <div className="val long">{d.collection}</div>
                 </div>
               )}
+              {d.handover && (
+                <div className="delivery-field">
+                  <div className="lbl">How it was delivered</div>
+                  <div className="val">{d.handover}</div>
+                </div>
+              )}
               {d.notes && (
                 <div className="delivery-field">
                   <div className="lbl">Key notes</div>

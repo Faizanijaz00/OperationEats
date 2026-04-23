@@ -56,6 +56,16 @@ export interface Application {
   date: string;
 }
 
+export const HANDOVER_METHODS = [
+  'Handed to customer',
+  'Left at door',
+  'Left at reception / concierge',
+  'Left in mailroom',
+  'Left in safe place',
+  'Met outside',
+  'Other'
+] as const;
+
 export interface Delivery {
   id: string;
   personId: string;
@@ -64,6 +74,7 @@ export interface Delivery {
   date: string;
   restaurant: string;
   collection: string;
+  handover: string;
   notes: string;
   timePeriod: string;
   busyness: string;

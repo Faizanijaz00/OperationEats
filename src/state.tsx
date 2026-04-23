@@ -38,6 +38,7 @@ interface DeliveryRow {
   date: string;
   restaurant: string;
   collection: string;
+  handover: string | null;
   notes: string;
   time_period: string;
   busyness: string;
@@ -89,6 +90,7 @@ function mapDelivery(r: DeliveryRow): Delivery {
     date: r.date || '',
     restaurant: r.restaurant || '',
     collection: r.collection || '',
+    handover: r.handover || '',
     notes: r.notes || '',
     timePeriod: r.time_period || '',
     busyness: r.busyness || '',
@@ -431,6 +433,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         date: d.date,
         restaurant: d.restaurant,
         collection: d.collection,
+        handover: d.handover,
         notes: d.notes,
         time_period: d.timePeriod,
         busyness: d.busyness,
@@ -461,6 +464,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           date: d.date,
           restaurant: d.restaurant,
           collection: d.collection,
+          handover: d.handover,
           notes: d.notes,
           time_period: d.timePeriod,
           busyness: d.busyness,

@@ -66,6 +66,15 @@ export const HANDOVER_METHODS = [
   'Other'
 ] as const;
 
+export const COLLECTION_METHODS = [
+  'Order not verified',
+  'Order verified via order number',
+  'Order verified via order name',
+  'Order verified via showing order on phone',
+  'Driver pick-up confirmation not verified',
+  'Driver pick-up confirmation verified via notification sound'
+] as const;
+
 export interface Delivery {
   id: string;
   personId: string | null;

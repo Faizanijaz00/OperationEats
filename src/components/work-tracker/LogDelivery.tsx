@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../../state';
-import { HANDOVER_METHODS, platformLabel } from '../../types';
+import {
+  COLLECTION_METHODS,
+  HANDOVER_METHODS,
+  platformLabel
+} from '../../types';
 
 interface Props {
   editingId: string | null;
@@ -235,11 +239,21 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
         </div>
 
         <label>How the item was collected</label>
-        <textarea
+        <select
           value={collection}
           onChange={(e) => setCollection(e.target.value)}
-          placeholder="Waited at counter 5 min, handed bag by staff, sealed, no issues…"
-        />
+        >
+          <option value="">—</option>
+          {COLLECTION_METHODS.map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
+          {collection &&
+            !(COLLECTION_METHODS as readonly string[]).includes(collection) && (
+              <option value={collection}>{collection} (historical)</option>
+            )}
+        </select>
 
         <label>How the item was delivered</label>
         <select value={handover} onChange={(e) => setHandover(e.target.value)}>

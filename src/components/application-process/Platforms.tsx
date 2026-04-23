@@ -39,13 +39,17 @@ export default function Platforms() {
       alert('Platform name required.');
       return;
     }
+    const existing = editingId
+      ? state.platforms.find((p) => p.id === editingId)
+      : undefined;
     const payload = {
       name: name.trim(),
       variant: variant.trim(),
       vehicleSource,
       skills,
       applicationNotes: applicationNotes.trim(),
-      generalNotes: generalNotes.trim()
+      generalNotes: generalNotes.trim(),
+      processSteps: existing?.processSteps ?? []
     };
     if (editingId) updatePlatform(editingId, payload);
     else addPlatform(payload);

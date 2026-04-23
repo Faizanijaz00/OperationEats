@@ -8,6 +8,12 @@ export type VehicleSource = '' | 'own' | 'company';
 
 export const PLATFORM_VARIANTS = ['Car', 'Van', 'Motorbike', 'Cycle'] as const;
 
+export interface ProcessStep {
+  id: string;
+  title: string;
+  description: string;
+}
+
 export interface Platform {
   id: string;
   name: string;
@@ -16,6 +22,7 @@ export interface Platform {
   skills: string[];
   applicationNotes: string;
   generalNotes: string;
+  processSteps: ProcessStep[];
 }
 
 export function platformLabel(p: Platform): string {

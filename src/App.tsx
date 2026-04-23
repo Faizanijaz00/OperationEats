@@ -5,11 +5,12 @@ import Platforms from './components/application-process/Platforms';
 import Applications from './components/application-process/Applications';
 import LogDelivery from './components/work-tracker/LogDelivery';
 import Deliveries from './components/work-tracker/Deliveries';
+import PlatformProcesses from './components/work-tracker/PlatformProcesses';
 import { useStore } from './state';
 
 type Mode = 'app' | 'work';
 type AppTab = 'overview' | 'people' | 'platforms' | 'applications';
-type WorkTab = 'log' | 'list';
+type WorkTab = 'log' | 'list' | 'processes';
 
 export default function App() {
   const { loading, error } = useStore();
@@ -126,6 +127,12 @@ export default function App() {
             >
               All Deliveries
             </button>
+            <button
+              className={workTab === 'processes' ? 'active' : ''}
+              onClick={() => setWorkTab('processes')}
+            >
+              Platform Processes
+            </button>
           </nav>
           <main>
             {workTab === 'log' && (
@@ -135,6 +142,7 @@ export default function App() {
               />
             )}
             {workTab === 'list' && <Deliveries onEdit={goEditDelivery} />}
+            {workTab === 'processes' && <PlatformProcesses />}
           </main>
         </div>
       )}

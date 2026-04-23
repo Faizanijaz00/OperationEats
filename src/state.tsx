@@ -5,6 +5,7 @@ import type {
   Delivery,
   Person,
   Platform,
+  ProcessStep,
   Application,
   VehicleSource
 } from './types';
@@ -24,6 +25,7 @@ interface PlatformRow {
   skills: string[] | null;
   application_notes: string | null;
   general_notes: string | null;
+  process_steps: ProcessStep[] | null;
 }
 interface ApplicationRow {
   id: string; person_id: string; platform_id: string; status: string; date: string;
@@ -48,6 +50,16 @@ function mapPerson(r: PersonRow): Person {
 }
 function mapPlatform(r: PlatformRow): Platform {
   const vs = (r.vehicle_source ?? '') as VehicleSource;
+  const rawSteps = Array.isArray(r.process_steps) ? r.process_steps : [];
+  const processSteps: ProcessStep[] = rawSteps
+    .filter((s): s is ProcessStep =>
+      !!s && typeof s === 'object' && typeof s.id === 'string'
+    )
+    .map((s) => ({
+      id: s.id,
+      title: typeof s.title === 'string' ? s.title : '',
+      description: typeof s.description === 'string' ? s.description : ''
+    }));
   return {
     id: r.id,
     name: r.name,
@@ -55,7 +67,8 @@ function mapPlatform(r: PlatformRow): Platform {
     vehicleSource: vs === 'own' || vs === 'company' ? vs : '',
     skills: r.skills ?? [],
     applicationNotes: r.application_notes ?? '',
-    generalNotes: r.general_notes ?? ''
+    generalNotes: r.general_notes ?? '',
+    processSteps
   };
 }
 function mapApplication(r: ApplicationRow): Application {
@@ -103,6 +116,7 @@ interface StoreAPI {
   removePerson: (id: string) => Promise<void>;
   addPlatform: (p: Omit<Platform, 'id'>) => Promise<void>;
   updatePlatform: (id: string, p: Omit<Platform, 'id'>) => Promise<void>;
+  updatePlatformProcess: (id: string, steps: ProcessStep[]) => Promise<void>;
   removePlatform: (id: string) => Promise<void>;
   upsertApplication: (
     personId: string,
@@ -295,7 +309,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         vehicle_source: p.vehicleSource,
         skills: p.skills,
         application_notes: p.applicationNotes,
-        general_notes: p.generalNotes
+        general_notes: p.generalNotes,
+        process_steps: p.processSteps
       });
       if (error) logErr('addPlatform', error);
     },
@@ -313,10 +328,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           vehicle_source: p.vehicleSource,
           skills: p.skills,
           application_notes: p.applicationNotes,
-          general_notes: p.generalNotes
+          general_notes: p.generalNotes,
+          process_steps: p.processSteps
         })
         .eq('id', id);
       if (error) logErr('updatePlatform', error);
+    },
+
+    async updatePlatformProcess(id, steps) {
+      setState((prev) => ({
+        ...prev,
+        platforms: prev.platforms.map((j) =>
+          j.id === id ? { ...j, processSteps: steps } : j
+        )
+      }));
+      const { error } = await supabase
+        .from('platforms')
+        .update({ process_steps: steps })
+        .eq('id', id);
+      if (error) logErr('updatePlatformProcess', error);
     },
 
     async removePlatform(id) {

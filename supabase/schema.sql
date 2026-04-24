@@ -47,6 +47,7 @@ create table if not exists deliveries (
   notes text not null default '',
   handover2 text not null default '',
   notes2 text not null default '',
+  extra_orders jsonb not null default '[]'::jsonb,
   start_time text not null default '',
   end_time text not null default '',
   busyness text not null default '',
@@ -69,6 +70,7 @@ alter table deliveries add column if not exists start_time text not null default
 alter table deliveries add column if not exists end_time text not null default '';
 alter table deliveries add column if not exists handover2 text not null default '';
 alter table deliveries add column if not exists notes2 text not null default '';
+alter table deliveries add column if not exists extra_orders jsonb not null default '[]'::jsonb;
 alter table deliveries alter column person_id drop not null;
 alter table deliveries alter column platform_id drop not null;
 

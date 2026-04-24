@@ -22,9 +22,9 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
   const [collection, setCollection] = useState('');
   const [handover, setHandover] = useState('');
   const [notes, setNotes] = useState('');
-  const [twoOrders, setTwoOrders] = useState(false);
-  const [handover2, setHandover2] = useState('');
-  const [notes2, setNotes2] = useState('');
+  const [extraOrders, setExtraOrders] = useState<
+    { handover: string; notes: string }[]
+  >([]);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [busyness, setBusyness] = useState('');
@@ -48,9 +48,7 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
         setCollection(d.collection);
         setHandover(d.handover);
         setNotes(d.notes);
-        setTwoOrders(!!(d.handover2 || d.notes2));
-        setHandover2(d.handover2);
-        setNotes2(d.notes2);
+        setExtraOrders(d.extraOrders.map((o) => ({ ...o })));
         setStartTime(d.startTime);
         setEndTime(d.endTime);
         setBusyness(d.busyness);
@@ -104,14 +102,27 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
     setCollection('');
     setHandover('');
     setNotes('');
-    setTwoOrders(false);
-    setHandover2('');
-    setNotes2('');
+    setExtraOrders([]);
     setStartTime('');
     setEndTime('');
     setBusyness('');
     setArea('');
     if (editingId) onDoneEditing();
+  }
+
+  function updateExtra(
+    i: number,
+    patch: Partial<{ handover: string; notes: string }>
+  ) {
+    setExtraOrders((prev) =>
+      prev.map((o, idx) => (idx === i ? { ...o, ...patch } : o))
+    );
+  }
+  function removeExtra(i: number) {
+    setExtraOrders((prev) => prev.filter((_, idx) => idx !== i));
+  }
+  function addExtra() {
+    setExtraOrders((prev) => [...prev, { handover: '', notes: '' }]);
   }
 
   async function submit() {
@@ -130,8 +141,10 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
       collection: collection.trim(),
       handover,
       notes: notes.trim(),
-      handover2: twoOrders ? handover2 : '',
-      notes2: twoOrders ? notes2.trim() : '',
+      extraOrders: extraOrders.map((o) => ({
+        handover: o.handover,
+        notes: o.notes.trim()
+      })),
       startTime,
       endTime,
       busyness,
@@ -189,15 +202,16 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
             className="ghost small"
             style={{ marginLeft: 'auto' }}
             onClick={() => {
-              if (twoOrders) {
-                // turning off — discard the second order's fields
-                setHandover2('');
-                setNotes2('');
+              if (extraOrders.length > 0) {
+                // turning off — clear all extra orders
+                setExtraOrders([]);
+              } else {
+                // turning on — start with one extra (so 2 orders total)
+                setExtraOrders([{ handover: '', notes: '' }]);
               }
-              setTwoOrders((v) => !v);
             }}
           >
-            {twoOrders
+            {extraOrders.length > 0
               ? '× Back to single order'
               : '+ Two orders from this pickup'}
           </button>
@@ -293,9 +307,16 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
             )}
         </select>
 
-        {twoOrders && <div className="order-divider">Order 1</div>}
+        {extraOrders.length > 0 && (
+          <div className="order-divider">
+            <span>Order 1</span>
+          </div>
+        )}
 
-        <label>How the item was delivered{twoOrders ? ' (order 1)' : ''}</label>
+        <label>
+          How the item was delivered
+          {extraOrders.length > 0 ? ' (order 1)' : ''}
+        </label>
         <select value={handover} onChange={(e) => setHandover(e.target.value)}>
           <option value="">—</option>
           {HANDOVER_METHODS.map((m) => (
@@ -305,36 +326,61 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
           ))}
         </select>
 
-        <label>Key notes{twoOrders ? ' (order 1)' : ''}</label>
+        <label>
+          Key notes{extraOrders.length > 0 ? ' (order 1)' : ''}
+        </label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Anything worth remembering — customer behaviour, address issues, traffic, app glitches…"
         />
 
-        {twoOrders && (
-          <>
-            <div className="order-divider">Order 2</div>
-            <label>How the item was delivered (order 2)</label>
-            <select
-              value={handover2}
-              onChange={(e) => setHandover2(e.target.value)}
-            >
-              <option value="">—</option>
-              {HANDOVER_METHODS.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
+        {extraOrders.map((o, i) => {
+          const orderNumber = i + 2;
+          return (
+            <div key={i}>
+              <div className="order-divider">
+                <span>Order {orderNumber}</span>
+                <button
+                  type="button"
+                  className="danger small"
+                  onClick={() => removeExtra(i)}
+                  title="Remove this order"
+                >
+                  × Remove
+                </button>
+              </div>
+              <label>How the item was delivered (order {orderNumber})</label>
+              <select
+                value={o.handover}
+                onChange={(e) => updateExtra(i, { handover: e.target.value })}
+              >
+                <option value="">—</option>
+                {HANDOVER_METHODS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+              <label>Key notes (order {orderNumber})</label>
+              <textarea
+                value={o.notes}
+                onChange={(e) => updateExtra(i, { notes: e.target.value })}
+                placeholder={`Anything worth remembering for order ${orderNumber}…`}
+              />
+            </div>
+          );
+        })}
 
-            <label>Key notes (order 2)</label>
-            <textarea
-              value={notes2}
-              onChange={(e) => setNotes2(e.target.value)}
-              placeholder="Anything worth remembering for the second order…"
-            />
-          </>
+        {extraOrders.length > 0 && (
+          <button
+            type="button"
+            className="ghost small"
+            onClick={addExtra}
+            style={{ marginBottom: 12 }}
+          >
+            + Add another order
+          </button>
         )}
 
         <h3 style={{ marginTop: 20 }}>Optional Context</h3>

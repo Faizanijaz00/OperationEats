@@ -153,8 +153,10 @@ export default function Deliveries({ onEdit }: Props) {
                 <strong>{platformLabelText}</strong>
                 <span className="chip">{formatDate(d.date)}</span>
                 {timeChip && <span className="chip">🕒 {timeChip}</span>}
-                {(d.handover2 || d.notes2) && (
-                  <span className="chip chip-two-orders">× 2 orders</span>
+                {d.extraOrders.length > 0 && (
+                  <span className="chip chip-two-orders">
+                    × {d.extraOrders.length + 1} orders
+                  </span>
                 )}
                 {busyLabel && (
                   <span className={`chip busy-${d.busyness}`}>
@@ -190,44 +192,31 @@ export default function Deliveries({ onEdit }: Props) {
                 </div>
               )}
               {(() => {
-                const hasTwo = !!(d.handover2 || d.notes2);
-                const orderPrefix = (n: 1 | 2) =>
-                  hasTwo ? `Order ${n} — ` : '';
-                return (
-                  <>
-                    {d.handover && (
-                      <div className="delivery-field">
-                        <div className="lbl">
-                          {orderPrefix(1)}How it was delivered
+                const allOrders = [
+                  { handover: d.handover, notes: d.notes },
+                  ...d.extraOrders
+                ];
+                const multi = d.extraOrders.length > 0;
+                const prefix = (n: number) => (multi ? `Order ${n} — ` : '');
+                return allOrders.map((o, idx) =>
+                  o.handover || o.notes ? (
+                    <div key={idx}>
+                      {o.handover && (
+                        <div className="delivery-field">
+                          <div className="lbl">
+                            {prefix(idx + 1)}How it was delivered
+                          </div>
+                          <div className="val">{o.handover}</div>
                         </div>
-                        <div className="val">{d.handover}</div>
-                      </div>
-                    )}
-                    {d.notes && (
-                      <div className="delivery-field">
-                        <div className="lbl">{orderPrefix(1)}Key notes</div>
-                        <div className="val long">{d.notes}</div>
-                      </div>
-                    )}
-                    {hasTwo && (
-                      <>
-                        {d.handover2 && (
-                          <div className="delivery-field">
-                            <div className="lbl">
-                              Order 2 — How it was delivered
-                            </div>
-                            <div className="val">{d.handover2}</div>
-                          </div>
-                        )}
-                        {d.notes2 && (
-                          <div className="delivery-field">
-                            <div className="lbl">Order 2 — Key notes</div>
-                            <div className="val long">{d.notes2}</div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </>
+                      )}
+                      {o.notes && (
+                        <div className="delivery-field">
+                          <div className="lbl">{prefix(idx + 1)}Key notes</div>
+                          <div className="val long">{o.notes}</div>
+                        </div>
+                      )}
+                    </div>
+                  ) : null
                 );
               })()}
             </div>

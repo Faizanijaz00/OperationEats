@@ -3,6 +3,7 @@ import type {
   State,
   AppStatus,
   Delivery,
+  DeliveryOrder,
   Person,
   Platform,
   ProcessStep,
@@ -42,6 +43,7 @@ interface DeliveryRow {
   notes: string;
   handover2: string | null;
   notes2: string | null;
+  extra_orders: unknown;
   start_time: string | null;
   end_time: string | null;
   busyness: string;
@@ -104,6 +106,18 @@ function mapApplication(r: ApplicationRow): Application {
   };
 }
 function mapDelivery(r: DeliveryRow): Delivery {
+  const rawExtras = Array.isArray(r.extra_orders) ? r.extra_orders : [];
+  let extraOrders: DeliveryOrder[] = rawExtras
+    .filter((o): o is Record<string, unknown> => !!o && typeof o === 'object')
+    .map((o) => ({
+      handover: typeof o.handover === 'string' ? o.handover : '',
+      notes: typeof o.notes === 'string' ? o.notes : ''
+    }));
+  // Legacy: if extra_orders is empty but handover2/notes2 are set,
+  // migrate that single second order into the array.
+  if (extraOrders.length === 0 && (r.handover2 || r.notes2)) {
+    extraOrders = [{ handover: r.handover2 || '', notes: r.notes2 || '' }];
+  }
   return {
     id: r.id,
     personId: r.person_id ?? null,
@@ -114,8 +128,7 @@ function mapDelivery(r: DeliveryRow): Delivery {
     collection: r.collection || '',
     handover: r.handover || '',
     notes: r.notes || '',
-    handover2: r.handover2 || '',
-    notes2: r.notes2 || '',
+    extraOrders,
     startTime: r.start_time || '',
     endTime: r.end_time || '',
     busyness: r.busyness || '',
@@ -460,8 +473,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         collection: d.collection,
         handover: d.handover,
         notes: d.notes,
-        handover2: d.handover2,
-        notes2: d.notes2,
+        extra_orders: d.extraOrders,
+        handover2: '',
+        notes2: '',
         start_time: d.startTime,
         end_time: d.endTime,
         busyness: d.busyness,
@@ -494,8 +508,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           collection: d.collection,
           handover: d.handover,
           notes: d.notes,
-          handover2: d.handover2,
-          notes2: d.notes2,
+          extra_orders: d.extraOrders,
+          handover2: '',
+          notes2: '',
           start_time: d.startTime,
           end_time: d.endTime,
           busyness: d.busyness,

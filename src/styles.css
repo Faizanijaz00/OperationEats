@@ -245,6 +245,10 @@ tr:hover td {
   font-weight: 700;
 }
 .order-divider {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   margin: 14px 0 8px 0;
   padding: 6px 10px;
   font-size: 11px;

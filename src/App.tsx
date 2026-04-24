@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Overview from './components/application-process/Overview';
 import People from './components/application-process/People';
 import Platforms from './components/application-process/Platforms';
@@ -12,11 +12,62 @@ type Mode = 'app' | 'work';
 type AppTab = 'overview' | 'people' | 'platforms' | 'applications';
 type WorkTab = 'log' | 'list' | 'processes';
 
+const MODE_KEY = 'opeats.mode';
+const APP_TAB_KEY = 'opeats.appTab';
+const WORK_TAB_KEY = 'opeats.workTab';
+
+function loadPersisted<T extends string>(
+  key: string,
+  valid: readonly T[],
+  fallback: T
+): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw && (valid as readonly string[]).includes(raw)) return raw as T;
+  } catch {
+    // localStorage unavailable
+  }
+  return fallback;
+}
+
+function usePersistedState<T extends string>(
+  key: string,
+  valid: readonly T[],
+  fallback: T
+): [T, (v: T) => void] {
+  const [val, setVal] = useState<T>(() => loadPersisted(key, valid, fallback));
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, val);
+    } catch {
+      // ignore write failures (private mode, quota, etc.)
+    }
+  }, [key, val]);
+  return [val, setVal];
+}
+
+const MODES: readonly Mode[] = ['app', 'work'];
+const APP_TABS: readonly AppTab[] = [
+  'overview',
+  'people',
+  'platforms',
+  'applications'
+];
+const WORK_TABS: readonly WorkTab[] = ['log', 'list', 'processes'];
+
 export default function App() {
   const { loading, error } = useStore();
-  const [mode, setMode] = useState<Mode>('app');
-  const [appTab, setAppTab] = useState<AppTab>('overview');
-  const [workTab, setWorkTab] = useState<WorkTab>('log');
+  const [mode, setMode] = usePersistedState<Mode>(MODE_KEY, MODES, 'app');
+  const [appTab, setAppTab] = usePersistedState<AppTab>(
+    APP_TAB_KEY,
+    APP_TABS,
+    'overview'
+  );
+  const [workTab, setWorkTab] = usePersistedState<WorkTab>(
+    WORK_TAB_KEY,
+    WORK_TABS,
+    'log'
+  );
   const [editingDeliveryId, setEditingDeliveryId] = useState<string | null>(null);
 
   function goEditDelivery(id: string) {

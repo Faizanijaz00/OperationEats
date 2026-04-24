@@ -60,19 +60,25 @@ function mapPlatform(r: PlatformRow): Platform {
   // Legacy format had no parentId — interpret old data as a linear chain.
   const hasAnyParent = valid.some((s) => 'parentId' in s);
   const processSteps: ProcessStep[] = valid.map((s, i) => {
-    const rawParent = (s as { parentId?: unknown }).parentId;
+    const raw = s as {
+      parentId?: unknown;
+      loopbackTo?: unknown;
+    };
     const parentId = hasAnyParent
-      ? typeof rawParent === 'string'
-        ? rawParent
+      ? typeof raw.parentId === 'string'
+        ? raw.parentId
         : null
       : i === 0
         ? null
         : valid[i - 1].id;
+    const loopbackTo =
+      typeof raw.loopbackTo === 'string' ? raw.loopbackTo : null;
     return {
       id: s.id,
       title: typeof s.title === 'string' ? s.title : '',
       description: typeof s.description === 'string' ? s.description : '',
-      parentId
+      parentId,
+      loopbackTo
     };
   });
   return {

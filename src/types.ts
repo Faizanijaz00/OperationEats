@@ -13,6 +13,7 @@ export interface ProcessStep {
   title: string;
   description: string;
   parentId: string | null;
+  loopbackTo: string | null;
 }
 
 export interface Platform {

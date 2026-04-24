@@ -693,11 +693,41 @@ tr:hover td.cell-missing-skills {
   background: var(--panel-2);
 }
 .flow-card-edit input,
-.flow-card-edit textarea {
+.flow-card-edit textarea,
+.flow-card-edit select {
   margin-bottom: 8px;
 }
 .flow-card-edit textarea {
   min-height: 52px;
+}
+.flow-card-btn-row {
+  gap: 6px;
+}
+
+/* Loop-back card — distinctive dashed violet treatment */
+.flow-card-loopback {
+  border-top-color: var(--violet);
+  border-style: dashed;
+  background: rgba(167, 139, 250, 0.06);
+}
+.flow-card-loopback .flow-card-index {
+  color: var(--violet);
+}
+.flow-card-loopback .flow-card-title {
+  color: var(--violet);
+  font-weight: 700;
+}
+.flow-loopback-target-title {
+  color: var(--muted);
+  font-weight: 500;
+}
+.flow-inline-label {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
 }
 
 /* Short vertical connector from a card's bottom edge */

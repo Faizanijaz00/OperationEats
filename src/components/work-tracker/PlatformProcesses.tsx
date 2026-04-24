@@ -32,6 +32,30 @@ function stepLabel(depth: number, siblingIndex: number, total: number): string {
   return `Step ${depth} · ${letter}`;
 }
 
+/** Compute the same `Step N · X` label for an arbitrary step id. */
+function labelForId(id: string, steps: ProcessStep[]): string {
+  const step = steps.find((s) => s.id === id);
+  if (!step) return '(removed)';
+  let depth = 1;
+  let cursor: string | null = step.parentId;
+  while (cursor !== null) {
+    const parent = steps.find((s) => s.id === cursor);
+    if (!parent) break;
+    depth += 1;
+    cursor = parent.parentId;
+  }
+  const siblings = steps.filter(
+    (s) => (s.parentId ?? null) === (step.parentId ?? null)
+  );
+  const siblingIndex = siblings.findIndex((s) => s.id === id);
+  return stepLabel(depth, siblingIndex, siblings.length);
+}
+
+function titleForId(id: string, steps: ProcessStep[]): string {
+  const s = steps.find((x) => x.id === id);
+  return s?.title?.trim() || '';
+}
+
 export default function PlatformProcesses() {
   const { state, updatePlatformProcess } = useStore();
   const [platformId, setPlatformId] = useState('');
@@ -70,7 +94,25 @@ export default function PlatformProcesses() {
   function addStep(parentId: string | null) {
     setDraft((prev) => [
       ...prev,
-      { id: uid(), title: '', description: '', parentId }
+      {
+        id: uid(),
+        title: '',
+        description: '',
+        parentId,
+        loopbackTo: null
+      }
+    ]);
+  }
+  function addLoopback(parentId: string | null) {
+    setDraft((prev) => [
+      ...prev,
+      {
+        id: uid(),
+        title: '',
+        description: '',
+        parentId,
+        loopbackTo: ''
+      }
     ]);
   }
   function updateStep(id: string, patch: Partial<ProcessStep>) {
@@ -89,11 +131,12 @@ export default function PlatformProcesses() {
   }
   async function save() {
     if (!platform) return;
-    const cleaned = draft.map((s) => ({
+    const cleaned: ProcessStep[] = draft.map((s) => ({
       id: s.id,
       title: s.title.trim(),
       description: s.description.trim(),
-      parentId: s.parentId
+      parentId: s.parentId,
+      loopbackTo: s.loopbackTo ? s.loopbackTo : null
     }));
     await updatePlatformProcess(platform.id, cleaned);
     setEditing(false);
@@ -184,6 +227,7 @@ export default function PlatformProcesses() {
                           totalSiblings={roots.length}
                           steps={draft}
                           onAddChild={addStep}
+                          onAddLoopback={addLoopback}
                           onChange={updateStep}
                           onRemove={removeStep}
                         />
@@ -253,7 +297,41 @@ function TreeNode({
 }) {
   const kids = childrenOf(step.id, steps);
   const multi = kids.length > 1;
-  const label = stepLabel(depth, siblingIndex, totalSiblings);
+  const isLoopback = step.loopbackTo !== null;
+  const label = isLoopback
+    ? totalSiblings > 1
+      ? `Option ${String.fromCharCode(65 + siblingIndex)}`
+      : 'Loop back'
+    : stepLabel(depth, siblingIndex, totalSiblings);
+
+  if (isLoopback) {
+    const targetId = step.loopbackTo!;
+    const targetLabel = targetId ? labelForId(targetId, steps) : '(not set)';
+    const targetTitle = targetId ? titleForId(targetId, steps) : '';
+    return (
+      <div className="flow-node">
+        <div className="flow-card flow-card-loopback">
+          <div className="flow-card-index">↺ {label}</div>
+          <div className="flow-card-title">
+            Back to {targetLabel}
+            {targetTitle && (
+              <span className="flow-loopback-target-title">
+                {' — '}
+                {targetTitle}
+              </span>
+            )}
+          </div>
+          {step.title && (
+            <div className="flow-card-desc">when: {step.title}</div>
+          )}
+          {step.description && (
+            <div className="flow-card-desc">{step.description}</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flow-node">
       <div className="flow-card">
@@ -304,6 +382,7 @@ function EditTreeNode({
   totalSiblings,
   steps,
   onAddChild,
+  onAddLoopback,
   onChange,
   onRemove
 }: {
@@ -313,18 +392,84 @@ function EditTreeNode({
   totalSiblings: number;
   steps: ProcessStep[];
   onAddChild: (parentId: string | null) => void;
+  onAddLoopback: (parentId: string | null) => void;
   onChange: (id: string, patch: Partial<ProcessStep>) => void;
   onRemove: (id: string) => void;
 }) {
   const kids = childrenOf(step.id, steps);
   const multi = kids.length > 1;
-  const label = stepLabel(depth, siblingIndex, totalSiblings);
+  const isLoopback = step.loopbackTo !== null;
+  const label = isLoopback
+    ? totalSiblings > 1
+      ? `Option ${String.fromCharCode(65 + siblingIndex)}`
+      : 'Loop back'
+    : stepLabel(depth, siblingIndex, totalSiblings);
+
+  if (isLoopback) {
+    // Loop-back cards can't have children; show target selector + optional condition/notes.
+    const selfDescendants = collectDescendants(step.id, steps);
+    const targetOptions = steps.filter(
+      (s) =>
+        s.id !== step.id &&
+        s.loopbackTo === null &&
+        !selfDescendants.has(s.id)
+    );
+    return (
+      <div className="flow-node">
+        <div className="flow-card flow-card-edit flow-card-loopback">
+          <div className="flow-card-index">↺ {label}</div>
+          <label className="flow-inline-label">Loop back to</label>
+          <select
+            value={step.loopbackTo ?? ''}
+            onChange={(e) =>
+              onChange(step.id, { loopbackTo: e.target.value || '' })
+            }
+          >
+            <option value="">Pick a target step…</option>
+            {targetOptions.map((s) => {
+              const sLabel = labelForId(s.id, steps);
+              return (
+                <option key={s.id} value={s.id}>
+                  {sLabel}
+                  {s.title ? ` — ${s.title}` : ''}
+                </option>
+              );
+            })}
+          </select>
+          <input
+            value={step.title}
+            placeholder="Condition (optional) — e.g. order cancelled"
+            onChange={(e) => onChange(step.id, { title: e.target.value })}
+          />
+          <textarea
+            value={step.description}
+            placeholder="Extra notes (optional)"
+            onChange={(e) =>
+              onChange(step.id, { description: e.target.value })
+            }
+          />
+          <div className="row-flex">
+            <button
+              type="button"
+              className="danger small"
+              style={{ marginLeft: 'auto' }}
+              onClick={() => onRemove(step.id)}
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const nextBtn =
     kids.length === 0
       ? '+ Next step'
       : kids.length === 1
         ? '+ Split into options'
         : '+ Another option';
+
   return (
     <div className="flow-node">
       <div className="flow-card flow-card-edit">
@@ -341,13 +486,21 @@ function EditTreeNode({
             onChange(step.id, { description: e.target.value })
           }
         />
-        <div className="row-flex">
+        <div className="row-flex flow-card-btn-row">
           <button
             type="button"
             className="ghost small"
             onClick={() => onAddChild(step.id)}
           >
             {nextBtn}
+          </button>
+          <button
+            type="button"
+            className="ghost small"
+            onClick={() => onAddLoopback(step.id)}
+            title="Add an option that loops back to a previous step"
+          >
+            + ↺ Loop back
           </button>
           <button
             type="button"
@@ -380,6 +533,7 @@ function EditTreeNode({
                   totalSiblings={kids.length}
                   steps={steps}
                   onAddChild={onAddChild}
+                  onAddLoopback={onAddLoopback}
                   onChange={onChange}
                   onRemove={onRemove}
                 />

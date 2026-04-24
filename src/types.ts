@@ -12,6 +12,7 @@ export interface ProcessStep {
   id: string;
   title: string;
   description: string;
+  parentId: string | null;
 }
 
 export interface Platform {

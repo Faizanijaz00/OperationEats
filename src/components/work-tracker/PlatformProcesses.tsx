@@ -5,6 +5,27 @@ import { uid } from '../../utils';
 
 type Toast = { type: 'success' | 'error'; message: string } | null;
 
+function childrenOf(
+  parentId: string | null,
+  steps: ProcessStep[]
+): ProcessStep[] {
+  return steps.filter((s) => (s.parentId ?? null) === parentId);
+}
+
+function collectDescendants(
+  id: string,
+  steps: ProcessStep[],
+  out: Set<string> = new Set()
+): Set<string> {
+  out.add(id);
+  for (const s of steps) {
+    if (s.parentId === id && !out.has(s.id)) {
+      collectDescendants(s.id, steps, out);
+    }
+  }
+  return out;
+}
+
 export default function PlatformProcesses() {
   const { state, updatePlatformProcess } = useStore();
   const [platformId, setPlatformId] = useState('');
@@ -40,34 +61,34 @@ export default function PlatformProcesses() {
     setEditing(false);
     setDraft([]);
   }
-  function addStep() {
-    setDraft((prev) => [...prev, { id: uid(), title: '', description: '' }]);
+  function addStep(parentId: string | null) {
+    setDraft((prev) => [
+      ...prev,
+      { id: uid(), title: '', description: '', parentId }
+    ]);
   }
   function updateStep(id: string, patch: Partial<ProcessStep>) {
     setDraft((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
   }
   function removeStep(id: string) {
-    setDraft((prev) => prev.filter((s) => s.id !== id));
-  }
-  function moveStep(id: string, dir: -1 | 1) {
-    setDraft((prev) => {
-      const idx = prev.findIndex((s) => s.id === id);
-      const target = idx + dir;
-      if (idx < 0 || target < 0 || target >= prev.length) return prev;
-      const next = [...prev];
-      [next[idx], next[target]] = [next[target], next[idx]];
-      return next;
-    });
+    const toRemove = collectDescendants(id, draft);
+    const descendantCount = toRemove.size - 1;
+    if (descendantCount > 0) {
+      const ok = confirm(
+        `This step has ${descendantCount} sub-step${descendantCount === 1 ? '' : 's'} below it. Remove all of them?`
+      );
+      if (!ok) return;
+    }
+    setDraft((prev) => prev.filter((s) => !toRemove.has(s.id)));
   }
   async function save() {
     if (!platform) return;
-    const cleaned = draft
-      .map((s) => ({
-        id: s.id,
-        title: s.title.trim(),
-        description: s.description.trim()
-      }))
-      .filter((s) => s.title || s.description);
+    const cleaned = draft.map((s) => ({
+      id: s.id,
+      title: s.title.trim(),
+      description: s.description.trim(),
+      parentId: s.parentId
+    }));
     await updatePlatformProcess(platform.id, cleaned);
     setEditing(false);
     setDraft([]);
@@ -123,68 +144,21 @@ export default function PlatformProcesses() {
       ) : editing ? (
         <div className="card">
           <h3>Editing — {platformLabel(platform)}</h3>
-          {!draft.length && (
-            <div
-              className="empty"
-              style={{ padding: '20px 12px', fontStyle: 'normal' }}
+          <EditTree
+            parentId={null}
+            prefix=""
+            steps={draft}
+            onAddChild={addStep}
+            onChange={updateStep}
+            onRemove={removeStep}
+          />
+          <div className="row-flex" style={{ marginTop: 14 }}>
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => addStep(null)}
             >
-              No steps yet. Add the first step below.
-            </div>
-          )}
-          <div className="process-editor">
-            {draft.map((s, i) => (
-              <div key={s.id} className="process-edit-row">
-                <div className="process-edit-index">{i + 1}</div>
-                <div className="process-edit-body">
-                  <input
-                    value={s.title}
-                    placeholder={`Step ${i + 1} title — e.g. Open the app`}
-                    onChange={(e) =>
-                      updateStep(s.id, { title: e.target.value })
-                    }
-                  />
-                  <textarea
-                    value={s.description}
-                    placeholder="What you do at this step. Tap info, tips, gotchas…"
-                    onChange={(e) =>
-                      updateStep(s.id, { description: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="process-edit-actions">
-                  <button
-                    type="button"
-                    className="ghost small"
-                    disabled={i === 0}
-                    onClick={() => moveStep(s.id, -1)}
-                    title="Move up"
-                  >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    className="ghost small"
-                    disabled={i === draft.length - 1}
-                    onClick={() => moveStep(s.id, 1)}
-                    title="Move down"
-                  >
-                    ↓
-                  </button>
-                  <button
-                    type="button"
-                    className="danger small"
-                    onClick={() => removeStep(s.id)}
-                    title="Remove step"
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="row-flex" style={{ marginTop: 12 }}>
-            <button type="button" className="ghost" onClick={addStep}>
-              + Add step
+              + Add root step
             </button>
             <button
               type="button"
@@ -205,25 +179,129 @@ export default function PlatformProcesses() {
           process” above to add steps.
         </div>
       ) : (
-        <div className="flow-chart">
-          {steps.map((s, i) => (
-            <div key={s.id} className="flow-step-wrap">
-              <div className="flow-step">
-                <div className="flow-step-index">{i + 1}</div>
-                <div className="flow-step-body">
-                  <div className="flow-step-title">
-                    {s.title || <em style={{ opacity: 0.6 }}>Untitled step</em>}
-                  </div>
-                  {s.description && (
-                    <div className="flow-step-desc">{s.description}</div>
-                  )}
-                </div>
-              </div>
-              {i < steps.length - 1 && <div className="flow-arrow">▼</div>}
-            </div>
-          ))}
+        <div className="flow-tree">
+          <ViewTree parentId={null} prefix="" steps={steps} />
         </div>
       )}
     </>
+  );
+}
+
+// ============================================================
+// Display tree
+// ============================================================
+function ViewTree({
+  parentId,
+  prefix,
+  steps
+}: {
+  parentId: string | null;
+  prefix: string;
+  steps: ProcessStep[];
+}) {
+  const kids = childrenOf(parentId, steps);
+  if (!kids.length) return null;
+  return (
+    <div className="flow-branch-list">
+      {kids.map((k, i) => {
+        const num = prefix ? `${prefix}.${i + 1}` : `${i + 1}`;
+        return (
+          <div key={k.id} className="flow-branch">
+            <div className="flow-card">
+              <div className="flow-card-index">{num}</div>
+              <div className="flow-card-body">
+                <div className="flow-card-title">
+                  {k.title || (
+                    <em style={{ opacity: 0.6 }}>Untitled step</em>
+                  )}
+                </div>
+                {k.description && (
+                  <div className="flow-card-desc">{k.description}</div>
+                )}
+              </div>
+            </div>
+            <ViewTree parentId={k.id} prefix={num} steps={steps} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============================================================
+// Edit tree
+// ============================================================
+function EditTree({
+  parentId,
+  prefix,
+  steps,
+  onAddChild,
+  onChange,
+  onRemove
+}: {
+  parentId: string | null;
+  prefix: string;
+  steps: ProcessStep[];
+  onAddChild: (parentId: string | null) => void;
+  onChange: (id: string, patch: Partial<ProcessStep>) => void;
+  onRemove: (id: string) => void;
+}) {
+  const kids = childrenOf(parentId, steps);
+  if (!kids.length) {
+    return null;
+  }
+  return (
+    <div className="flow-branch-list">
+      {kids.map((k, i) => {
+        const num = prefix ? `${prefix}.${i + 1}` : `${i + 1}`;
+        return (
+          <div key={k.id} className="flow-branch flow-branch-edit">
+            <div className="flow-card flow-card-edit">
+              <div className="flow-card-index">{num}</div>
+              <div className="flow-card-body">
+                <input
+                  value={k.title}
+                  placeholder={`Step ${num} — e.g. Open the app`}
+                  onChange={(e) => onChange(k.id, { title: e.target.value })}
+                />
+                <textarea
+                  value={k.description}
+                  placeholder="What you do here. Tips, gotchas…"
+                  onChange={(e) =>
+                    onChange(k.id, { description: e.target.value })
+                  }
+                />
+                <div className="row-flex">
+                  <button
+                    type="button"
+                    className="ghost small"
+                    onClick={() => onAddChild(k.id)}
+                  >
+                    + Sub-step
+                  </button>
+                  <button
+                    type="button"
+                    className="danger small"
+                    style={{ marginLeft: 'auto' }}
+                    onClick={() => onRemove(k.id)}
+                    title="Remove this step and anything below it"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+            <EditTree
+              parentId={k.id}
+              prefix={num}
+              steps={steps}
+              onAddChild={onAddChild}
+              onChange={onChange}
+              onRemove={onRemove}
+            />
+          </div>
+        );
+      })}
+    </div>
   );
 }

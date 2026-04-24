@@ -53,15 +53,28 @@ function mapPerson(r: PersonRow): Person {
 function mapPlatform(r: PlatformRow): Platform {
   const vs = (r.vehicle_source ?? '') as VehicleSource;
   const rawSteps = Array.isArray(r.process_steps) ? r.process_steps : [];
-  const processSteps: ProcessStep[] = rawSteps
-    .filter((s): s is ProcessStep =>
-      !!s && typeof s === 'object' && typeof s.id === 'string'
-    )
-    .map((s) => ({
+  const valid = rawSteps.filter(
+    (s): s is ProcessStep =>
+      !!s && typeof s === 'object' && typeof (s as ProcessStep).id === 'string'
+  );
+  // Legacy format had no parentId — interpret old data as a linear chain.
+  const hasAnyParent = valid.some((s) => 'parentId' in s);
+  const processSteps: ProcessStep[] = valid.map((s, i) => {
+    const rawParent = (s as { parentId?: unknown }).parentId;
+    const parentId = hasAnyParent
+      ? typeof rawParent === 'string'
+        ? rawParent
+        : null
+      : i === 0
+        ? null
+        : valid[i - 1].id;
+    return {
       id: s.id,
       title: typeof s.title === 'string' ? s.title : '',
-      description: typeof s.description === 'string' ? s.description : ''
-    }));
+      description: typeof s.description === 'string' ? s.description : '',
+      parentId
+    };
+  });
   return {
     id: r.id,
     name: r.name,

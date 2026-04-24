@@ -45,6 +45,8 @@ create table if not exists deliveries (
   collection text not null default '',
   handover text not null default '',
   notes text not null default '',
+  handover2 text not null default '',
+  notes2 text not null default '',
   start_time text not null default '',
   end_time text not null default '',
   busyness text not null default '',
@@ -65,6 +67,8 @@ alter table deliveries add column if not exists account_owner_id text references
 alter table deliveries add column if not exists handover text not null default '';
 alter table deliveries add column if not exists start_time text not null default '';
 alter table deliveries add column if not exists end_time text not null default '';
+alter table deliveries add column if not exists handover2 text not null default '';
+alter table deliveries add column if not exists notes2 text not null default '';
 alter table deliveries alter column person_id drop not null;
 alter table deliveries alter column platform_id drop not null;
 

@@ -40,6 +40,8 @@ interface DeliveryRow {
   collection: string;
   handover: string | null;
   notes: string;
+  handover2: string | null;
+  notes2: string | null;
   start_time: string | null;
   end_time: string | null;
   busyness: string;
@@ -112,6 +114,8 @@ function mapDelivery(r: DeliveryRow): Delivery {
     collection: r.collection || '',
     handover: r.handover || '',
     notes: r.notes || '',
+    handover2: r.handover2 || '',
+    notes2: r.notes2 || '',
     startTime: r.start_time || '',
     endTime: r.end_time || '',
     busyness: r.busyness || '',
@@ -456,6 +460,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         collection: d.collection,
         handover: d.handover,
         notes: d.notes,
+        handover2: d.handover2,
+        notes2: d.notes2,
         start_time: d.startTime,
         end_time: d.endTime,
         busyness: d.busyness,
@@ -488,6 +494,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           collection: d.collection,
           handover: d.handover,
           notes: d.notes,
+          handover2: d.handover2,
+          notes2: d.notes2,
           start_time: d.startTime,
           end_time: d.endTime,
           busyness: d.busyness,

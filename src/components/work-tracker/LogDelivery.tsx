@@ -22,6 +22,9 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
   const [collection, setCollection] = useState('');
   const [handover, setHandover] = useState('');
   const [notes, setNotes] = useState('');
+  const [twoOrders, setTwoOrders] = useState(false);
+  const [handover2, setHandover2] = useState('');
+  const [notes2, setNotes2] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [busyness, setBusyness] = useState('');
@@ -45,6 +48,9 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
         setCollection(d.collection);
         setHandover(d.handover);
         setNotes(d.notes);
+        setTwoOrders(!!(d.handover2 || d.notes2));
+        setHandover2(d.handover2);
+        setNotes2(d.notes2);
         setStartTime(d.startTime);
         setEndTime(d.endTime);
         setBusyness(d.busyness);
@@ -98,6 +104,9 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
     setCollection('');
     setHandover('');
     setNotes('');
+    setTwoOrders(false);
+    setHandover2('');
+    setNotes2('');
     setStartTime('');
     setEndTime('');
     setBusyness('');
@@ -121,6 +130,8 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
       collection: collection.trim(),
       handover,
       notes: notes.trim(),
+      handover2: twoOrders ? handover2 : '',
+      notes2: twoOrders ? notes2.trim() : '',
       startTime,
       endTime,
       busyness,
@@ -163,7 +174,34 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
           submit();
         }}
       >
-        <h3>Delivery Template</h3>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            marginBottom: 12,
+            flexWrap: 'wrap'
+          }}
+        >
+          <h3 style={{ margin: 0 }}>Delivery Template</h3>
+          <button
+            type="button"
+            className="ghost small"
+            style={{ marginLeft: 'auto' }}
+            onClick={() => {
+              if (twoOrders) {
+                // turning off — discard the second order's fields
+                setHandover2('');
+                setNotes2('');
+              }
+              setTwoOrders((v) => !v);
+            }}
+          >
+            {twoOrders
+              ? '× Back to single order'
+              : '+ Two orders from this pickup'}
+          </button>
+        </div>
         <div className="grid-fields">
           <div>
             <label>Platform</label>
@@ -255,7 +293,9 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
             )}
         </select>
 
-        <label>How the item was delivered</label>
+        {twoOrders && <div className="order-divider">Order 1</div>}
+
+        <label>How the item was delivered{twoOrders ? ' (order 1)' : ''}</label>
         <select value={handover} onChange={(e) => setHandover(e.target.value)}>
           <option value="">—</option>
           {HANDOVER_METHODS.map((m) => (
@@ -265,12 +305,37 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
           ))}
         </select>
 
-        <label>Key notes</label>
+        <label>Key notes{twoOrders ? ' (order 1)' : ''}</label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Anything worth remembering — customer behaviour, address issues, traffic, app glitches…"
         />
+
+        {twoOrders && (
+          <>
+            <div className="order-divider">Order 2</div>
+            <label>How the item was delivered (order 2)</label>
+            <select
+              value={handover2}
+              onChange={(e) => setHandover2(e.target.value)}
+            >
+              <option value="">—</option>
+              {HANDOVER_METHODS.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+
+            <label>Key notes (order 2)</label>
+            <textarea
+              value={notes2}
+              onChange={(e) => setNotes2(e.target.value)}
+              placeholder="Anything worth remembering for the second order…"
+            />
+          </>
+        )}
 
         <h3 style={{ marginTop: 20 }}>Optional Context</h3>
         <div className="grid-fields">

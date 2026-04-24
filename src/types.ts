@@ -87,6 +87,8 @@ export interface Delivery {
   collection: string;
   handover: string;
   notes: string;
+  handover2: string;
+  notes2: string;
   startTime: string;
   endTime: string;
   busyness: string;

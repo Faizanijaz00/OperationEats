@@ -1,7 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import { useStore } from '../../state';
 import { platformLabel, type ProcessStep } from '../../types';
 import { uid } from '../../utils';
+
+interface ArrowPath {
+  key: string;
+  d: string;
+}
 
 type Toast = { type: 'success' | 'error'; message: string } | null;
 
@@ -62,12 +74,28 @@ export default function PlatformProcesses() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<ProcessStep[]>([]);
   const [toast, setToast] = useState<Toast>(null);
+  const [arrows, setArrows] = useState<ArrowPath[]>([]);
+  const [resizeTick, setResizeTick] = useState(0);
+  const flowChartRef = useRef<HTMLDivElement | null>(null);
+  const cardRefs = useRef(new Map<string, HTMLElement>());
+
+  const registerRef = useCallback((id: string, el: HTMLElement | null) => {
+    if (el) cardRefs.current.set(id, el);
+    else cardRefs.current.delete(id);
+  }, []);
 
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 3000);
     return () => clearTimeout(t);
   }, [toast]);
+
+  useEffect(() => {
+    if (!flowChartRef.current || typeof ResizeObserver === 'undefined') return;
+    const obs = new ResizeObserver(() => setResizeTick((n) => n + 1));
+    obs.observe(flowChartRef.current);
+    return () => obs.disconnect();
+  }, [platformId, editing]);
 
   const sortedPlatforms = useMemo(
     () =>
@@ -147,6 +175,41 @@ export default function PlatformProcesses() {
   const source = editing ? draft : steps;
   const roots = childrenOf(null, source);
 
+  useLayoutEffect(() => {
+    const container = flowChartRef.current;
+    if (!container) {
+      setArrows((prev) => (prev.length ? [] : prev));
+      return;
+    }
+    const cRect = container.getBoundingClientRect();
+    const next: ArrowPath[] = [];
+    for (const lb of source) {
+      if (!lb.loopbackTo) continue;
+      const srcEl = cardRefs.current.get(lb.id);
+      const tgtEl = cardRefs.current.get(lb.loopbackTo);
+      if (!srcEl || !tgtEl) continue;
+      const s = srcEl.getBoundingClientRect();
+      const t = tgtEl.getBoundingClientRect();
+      const sx = s.right - cRect.left;
+      const sy = s.top + s.height / 2 - cRect.top;
+      const tx = t.right - cRect.left;
+      const ty = t.top + t.height / 2 - cRect.top;
+      const verticalDist = Math.max(Math.abs(ty - sy), 40);
+      const offset = Math.min(120, 40 + verticalDist * 0.35);
+      const d = `M ${sx} ${sy} C ${sx + offset} ${sy} ${tx + offset} ${ty} ${tx + 6} ${ty}`;
+      next.push({ key: lb.id, d });
+    }
+    setArrows((prev) => {
+      if (
+        prev.length === next.length &&
+        prev.every((p, i) => p.key === next[i].key && p.d === next[i].d)
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [source, editing, platformId, resizeTick]);
+
   return (
     <>
       {toast && (
@@ -203,7 +266,30 @@ export default function PlatformProcesses() {
                   : `No process built yet for ${platformLabel(platform)}. Click “Build process” above to add steps.`}
               </div>
             ) : (
-              <div className="flow-chart">
+              <div className="flow-chart" ref={flowChartRef}>
+                <svg className="flow-arrow-overlay" aria-hidden="true">
+                  <defs>
+                    <marker
+                      id="flow-loopback-head"
+                      viewBox="0 0 10 10"
+                      refX="8"
+                      refY="5"
+                      markerWidth="7"
+                      markerHeight="7"
+                      orient="auto"
+                    >
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#a78bfa" />
+                    </marker>
+                  </defs>
+                  {arrows.map((a) => (
+                    <path
+                      key={a.key}
+                      d={a.d}
+                      className="flow-arrow-path"
+                      markerEnd="url(#flow-loopback-head)"
+                    />
+                  ))}
+                </svg>
                 {roots.length > 1 && (
                   <div className="flow-branch-label">
                     start — one of {roots.length} paths
@@ -230,6 +316,7 @@ export default function PlatformProcesses() {
                           onAddLoopback={addLoopback}
                           onChange={updateStep}
                           onRemove={removeStep}
+                          registerRef={registerRef}
                         />
                       ) : (
                         <TreeNode
@@ -238,6 +325,7 @@ export default function PlatformProcesses() {
                           siblingIndex={i}
                           totalSiblings={roots.length}
                           steps={steps}
+                          registerRef={registerRef}
                         />
                       )}
                     </div>
@@ -287,13 +375,15 @@ function TreeNode({
   depth,
   siblingIndex,
   totalSiblings,
-  steps
+  steps,
+  registerRef
 }: {
   step: ProcessStep;
   depth: number;
   siblingIndex: number;
   totalSiblings: number;
   steps: ProcessStep[];
+  registerRef: (id: string, el: HTMLElement | null) => void;
 }) {
   const kids = childrenOf(step.id, steps);
   const multi = kids.length > 1;
@@ -310,7 +400,10 @@ function TreeNode({
     const targetTitle = targetId ? titleForId(targetId, steps) : '';
     return (
       <div className="flow-node">
-        <div className="flow-card flow-card-loopback">
+        <div
+          ref={(el) => registerRef(step.id, el)}
+          className="flow-card flow-card-loopback"
+        >
           <div className="flow-card-index">↺ {label}</div>
           <div className="flow-card-title">
             Back to {targetLabel}
@@ -334,7 +427,7 @@ function TreeNode({
 
   return (
     <div className="flow-node">
-      <div className="flow-card">
+      <div ref={(el) => registerRef(step.id, el)} className="flow-card">
         <div className="flow-card-index">{label}</div>
         <div className="flow-card-title">
           {step.title || <em style={{ opacity: 0.6 }}>Untitled step</em>}
@@ -362,6 +455,7 @@ function TreeNode({
                   siblingIndex={i}
                   totalSiblings={kids.length}
                   steps={steps}
+                  registerRef={registerRef}
                 />
               </div>
             ))}
@@ -384,7 +478,8 @@ function EditTreeNode({
   onAddChild,
   onAddLoopback,
   onChange,
-  onRemove
+  onRemove,
+  registerRef
 }: {
   step: ProcessStep;
   depth: number;
@@ -395,6 +490,7 @@ function EditTreeNode({
   onAddLoopback: (parentId: string | null) => void;
   onChange: (id: string, patch: Partial<ProcessStep>) => void;
   onRemove: (id: string) => void;
+  registerRef: (id: string, el: HTMLElement | null) => void;
 }) {
   const kids = childrenOf(step.id, steps);
   const multi = kids.length > 1;
@@ -416,7 +512,10 @@ function EditTreeNode({
     );
     return (
       <div className="flow-node">
-        <div className="flow-card flow-card-edit flow-card-loopback">
+        <div
+          ref={(el) => registerRef(step.id, el)}
+          className="flow-card flow-card-edit flow-card-loopback"
+        >
           <div className="flow-card-index">↺ {label}</div>
           <label className="flow-inline-label">Loop back to</label>
           <select
@@ -472,7 +571,10 @@ function EditTreeNode({
 
   return (
     <div className="flow-node">
-      <div className="flow-card flow-card-edit">
+      <div
+        ref={(el) => registerRef(step.id, el)}
+        className="flow-card flow-card-edit"
+      >
         <div className="flow-card-index">{label}</div>
         <input
           value={step.title}
@@ -536,6 +638,7 @@ function EditTreeNode({
                   onAddLoopback={onAddLoopback}
                   onChange={onChange}
                   onRemove={onRemove}
+                  registerRef={registerRef}
                 />
               </div>
             ))}

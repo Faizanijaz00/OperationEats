@@ -650,7 +650,30 @@ tr:hover td.cell-missing-skills {
   min-width: 100%;
   width: max-content;
   margin: 0 auto;
-  padding: 0 12px;
+  padding: 0 90px 0 12px; /* right padding leaves room for loop-back curves */
+  position: relative;
+}
+.flow-arrow-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 0;
+}
+.flow-arrow-path {
+  fill: none;
+  stroke: #a78bfa;
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+  opacity: 0.9;
+}
+.flow-chart > .flow-children,
+.flow-chart > .flow-branch-label {
+  position: relative;
+  z-index: 1;
 }
 .flow-node {
   display: flex;

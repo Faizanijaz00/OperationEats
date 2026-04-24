@@ -26,6 +26,12 @@ function collectDescendants(
   return out;
 }
 
+function stepLabel(depth: number, siblingIndex: number, total: number): string {
+  if (total <= 1) return `Step ${depth}`;
+  const letter = String.fromCharCode(65 + siblingIndex);
+  return `Step ${depth} · ${letter}`;
+}
+
 export default function PlatformProcesses() {
   const { state, updatePlatformProcess } = useStore();
   const [platformId, setPlatformId] = useState('');
@@ -75,7 +81,7 @@ export default function PlatformProcesses() {
     const descendantCount = toRemove.size - 1;
     if (descendantCount > 0) {
       const ok = confirm(
-        `This step has ${descendantCount} sub-step${descendantCount === 1 ? '' : 's'} below it. Remove all of them?`
+        `This step has ${descendantCount} step${descendantCount === 1 ? '' : 's'} downstream. Remove them all?`
       );
       if (!ok) return;
     }
@@ -94,6 +100,9 @@ export default function PlatformProcesses() {
     setDraft([]);
     setToast({ type: 'success', message: 'Process saved ✓' });
   }
+
+  const source = editing ? draft : steps;
+  const roots = childrenOf(null, source);
 
   return (
     <>
@@ -141,191 +150,244 @@ export default function PlatformProcesses() {
         <div className="empty">
           Pick a platform to view or edit its delivery process.
         </div>
-      ) : editing ? (
-        <div className="card">
-          <h3>Editing — {platformLabel(platform)}</h3>
-          <EditTree
-            parentId={null}
-            depth={1}
-            steps={draft}
-            onAddChild={addStep}
-            onChange={updateStep}
-            onRemove={removeStep}
-          />
-          <div className="row-flex" style={{ marginTop: 14 }}>
-            <button
-              type="button"
-              className="ghost"
-              onClick={() => addStep(null)}
-            >
-              + Add root step
-            </button>
-            <button
-              type="button"
-              className="primary"
-              style={{ marginLeft: 'auto' }}
-              onClick={save}
-            >
-              Save process
-            </button>
-            <button type="button" className="ghost" onClick={cancelEdit}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : !steps.length ? (
-        <div className="empty">
-          No process built yet for {platformLabel(platform)}. Click “Build
-          process” above to add steps.
-        </div>
       ) : (
-        <div className="flow-tree">
-          <ViewTree parentId={null} depth={1} steps={steps} />
-        </div>
+        <>
+          <div className="flow-chart-scroll">
+            {!roots.length ? (
+              <div className="empty">
+                {editing
+                  ? 'No steps yet. Click “+ Add root step” below to start.'
+                  : `No process built yet for ${platformLabel(platform)}. Click “Build process” above to add steps.`}
+              </div>
+            ) : (
+              <div className="flow-chart">
+                {roots.length > 1 && (
+                  <div className="flow-branch-label">
+                    start — one of {roots.length} paths
+                  </div>
+                )}
+                <div
+                  className={`flow-children${
+                    roots.length > 1 ? ' flow-children-multi' : ''
+                  }`}
+                >
+                  {roots.map((r, i) => (
+                    <div
+                      key={r.id}
+                      className="flow-child flow-child-root"
+                    >
+                      {editing ? (
+                        <EditTreeNode
+                          step={r}
+                          depth={1}
+                          siblingIndex={i}
+                          totalSiblings={roots.length}
+                          steps={draft}
+                          onAddChild={addStep}
+                          onChange={updateStep}
+                          onRemove={removeStep}
+                        />
+                      ) : (
+                        <TreeNode
+                          step={r}
+                          depth={1}
+                          siblingIndex={i}
+                          totalSiblings={roots.length}
+                          steps={steps}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {editing && (
+            <div className="row-flex" style={{ marginTop: 14 }}>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => addStep(null)}
+              >
+                + Add root step
+              </button>
+              <button
+                type="button"
+                className="primary"
+                style={{ marginLeft: 'auto' }}
+                onClick={save}
+              >
+                Save process
+              </button>
+              <button
+                type="button"
+                className="ghost"
+                onClick={cancelEdit}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </>
       )}
     </>
   );
 }
 
-function stepLabel(depth: number, siblingIndex: number, total: number): string {
-  if (total <= 1) return `Step ${depth}`;
-  const letter = String.fromCharCode(65 + siblingIndex);
-  return `Step ${depth} · ${letter}`;
-}
-
 // ============================================================
-// Display tree
+// Display node (recursive)
 // ============================================================
-function ViewTree({
-  parentId,
+function TreeNode({
+  step,
   depth,
+  siblingIndex,
+  totalSiblings,
   steps
 }: {
-  parentId: string | null;
+  step: ProcessStep;
   depth: number;
+  siblingIndex: number;
+  totalSiblings: number;
   steps: ProcessStep[];
 }) {
-  const kids = childrenOf(parentId, steps);
-  if (!kids.length) return null;
-  const branching = kids.length > 1;
+  const kids = childrenOf(step.id, steps);
+  const multi = kids.length > 1;
+  const label = stepLabel(depth, siblingIndex, totalSiblings);
   return (
-    <div
-      className={`flow-branch-list${branching ? ' flow-branch-list-split' : ''}`}
-    >
-      {branching && (
-        <div className="flow-branch-label">
-          one of {kids.length} options
+    <div className="flow-node">
+      <div className="flow-card">
+        <div className="flow-card-index">{label}</div>
+        <div className="flow-card-title">
+          {step.title || <em style={{ opacity: 0.6 }}>Untitled step</em>}
         </div>
-      )}
-      {kids.map((k, i) => (
-        <div key={k.id} className="flow-branch">
-          <div className="flow-card">
-            <div className="flow-card-index">
-              {stepLabel(depth, i, kids.length)}
+        {step.description && (
+          <div className="flow-card-desc">{step.description}</div>
+        )}
+      </div>
+      {kids.length > 0 && (
+        <>
+          <div className="flow-connector-stub" />
+          {multi && (
+            <div className="flow-branch-label">
+              one of {kids.length} options
             </div>
-            <div className="flow-card-body">
-              <div className="flow-card-title">
-                {k.title || <em style={{ opacity: 0.6 }}>Untitled step</em>}
+          )}
+          <div
+            className={`flow-children${multi ? ' flow-children-multi' : ''}`}
+          >
+            {kids.map((k, i) => (
+              <div key={k.id} className="flow-child">
+                <TreeNode
+                  step={k}
+                  depth={depth + 1}
+                  siblingIndex={i}
+                  totalSiblings={kids.length}
+                  steps={steps}
+                />
               </div>
-              {k.description && (
-                <div className="flow-card-desc">{k.description}</div>
-              )}
-            </div>
+            ))}
           </div>
-          <ViewTree parentId={k.id} depth={depth + 1} steps={steps} />
-        </div>
-      ))}
+        </>
+      )}
     </div>
   );
 }
 
 // ============================================================
-// Edit tree
+// Edit node (recursive)
 // ============================================================
-function EditTree({
-  parentId,
+function EditTreeNode({
+  step,
   depth,
+  siblingIndex,
+  totalSiblings,
   steps,
   onAddChild,
   onChange,
   onRemove
 }: {
-  parentId: string | null;
+  step: ProcessStep;
   depth: number;
+  siblingIndex: number;
+  totalSiblings: number;
   steps: ProcessStep[];
   onAddChild: (parentId: string | null) => void;
   onChange: (id: string, patch: Partial<ProcessStep>) => void;
   onRemove: (id: string) => void;
 }) {
-  const kids = childrenOf(parentId, steps);
-  if (!kids.length) return null;
-  const branching = kids.length > 1;
+  const kids = childrenOf(step.id, steps);
+  const multi = kids.length > 1;
+  const label = stepLabel(depth, siblingIndex, totalSiblings);
+  const nextBtn =
+    kids.length === 0
+      ? '+ Next step'
+      : kids.length === 1
+        ? '+ Split into options'
+        : '+ Another option';
   return (
-    <div
-      className={`flow-branch-list${branching ? ' flow-branch-list-split' : ''}`}
-    >
-      {branching && (
-        <div className="flow-branch-label">
-          one of {kids.length} options
+    <div className="flow-node">
+      <div className="flow-card flow-card-edit">
+        <div className="flow-card-index">{label}</div>
+        <input
+          value={step.title}
+          placeholder={`${label} — e.g. Open the app`}
+          onChange={(e) => onChange(step.id, { title: e.target.value })}
+        />
+        <textarea
+          value={step.description}
+          placeholder="What you do here. Tips, gotchas…"
+          onChange={(e) =>
+            onChange(step.id, { description: e.target.value })
+          }
+        />
+        <div className="row-flex">
+          <button
+            type="button"
+            className="ghost small"
+            onClick={() => onAddChild(step.id)}
+          >
+            {nextBtn}
+          </button>
+          <button
+            type="button"
+            className="danger small"
+            style={{ marginLeft: 'auto' }}
+            onClick={() => onRemove(step.id)}
+            title="Remove this step and anything downstream"
+          >
+            Remove
+          </button>
         </div>
-      )}
-      {kids.map((k, i) => {
-        const label = stepLabel(depth, i, kids.length);
-        const childKids = childrenOf(k.id, steps);
-        const nextBtn =
-          childKids.length === 0
-            ? '+ Next step'
-            : childKids.length === 1
-              ? '+ Turn next step into options'
-              : '+ Another option';
-        return (
-          <div key={k.id} className="flow-branch flow-branch-edit">
-            <div className="flow-card flow-card-edit">
-              <div className="flow-card-index">{label}</div>
-              <div className="flow-card-body">
-                <input
-                  value={k.title}
-                  placeholder={`${label} — e.g. Open the app`}
-                  onChange={(e) => onChange(k.id, { title: e.target.value })}
-                />
-                <textarea
-                  value={k.description}
-                  placeholder="What you do here. Tips, gotchas…"
-                  onChange={(e) =>
-                    onChange(k.id, { description: e.target.value })
-                  }
-                />
-                <div className="row-flex">
-                  <button
-                    type="button"
-                    className="ghost small"
-                    onClick={() => onAddChild(k.id)}
-                  >
-                    {nextBtn}
-                  </button>
-                  <button
-                    type="button"
-                    className="danger small"
-                    style={{ marginLeft: 'auto' }}
-                    onClick={() => onRemove(k.id)}
-                    title="Remove this step and anything below it"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
+      </div>
+      {kids.length > 0 && (
+        <>
+          <div className="flow-connector-stub" />
+          {multi && (
+            <div className="flow-branch-label">
+              one of {kids.length} options
             </div>
-            <EditTree
-              parentId={k.id}
-              depth={depth + 1}
-              steps={steps}
-              onAddChild={onAddChild}
-              onChange={onChange}
-              onRemove={onRemove}
-            />
+          )}
+          <div
+            className={`flow-children${multi ? ' flow-children-multi' : ''}`}
+          >
+            {kids.map((k, i) => (
+              <div key={k.id} className="flow-child">
+                <EditTreeNode
+                  step={k}
+                  depth={depth + 1}
+                  siblingIndex={i}
+                  totalSiblings={kids.length}
+                  steps={steps}
+                  onAddChild={onAddChild}
+                  onChange={onChange}
+                  onRemove={onRemove}
+                />
+              </div>
+            ))}
           </div>
-        );
-      })}
+        </>
+      )}
     </div>
   );
 }

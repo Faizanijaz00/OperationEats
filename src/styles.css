@@ -654,6 +654,25 @@ tr:hover td.cell-missing-skills {
   margin-left: 22px;
   padding-left: 22px;
   border-left: 2px solid rgba(255, 184, 77, 0.35);
+  position: relative;
+}
+/* Branching (>1 child) uses a brighter colour so splits read clearly */
+.flow-branch-list.flow-branch-list-split {
+  border-left-color: rgba(77, 210, 255, 0.55);
+  border-left-style: dashed;
+}
+.flow-branch-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--accent-2);
+  font-weight: 700;
+  margin: -4px 0 6px -10px;
+  padding: 2px 8px;
+  background: var(--bg);
+  display: inline-block;
+  border-radius: 4px;
+  border: 1px solid rgba(77, 210, 255, 0.35);
 }
 .flow-branch {
   position: relative;
@@ -667,6 +686,9 @@ tr:hover td.cell-missing-skills {
   width: 22px;
   height: 2px;
   background: rgba(255, 184, 77, 0.35);
+}
+.flow-branch-list-split > .flow-branch::before {
+  background: rgba(77, 210, 255, 0.55) !important;
 }
 .flow-card {
   display: flex;

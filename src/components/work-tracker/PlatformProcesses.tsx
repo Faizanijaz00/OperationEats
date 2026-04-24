@@ -146,7 +146,7 @@ export default function PlatformProcesses() {
           <h3>Editing — {platformLabel(platform)}</h3>
           <EditTree
             parentId={null}
-            prefix=""
+            depth={1}
             steps={draft}
             onAddChild={addStep}
             onChange={updateStep}
@@ -180,11 +180,17 @@ export default function PlatformProcesses() {
         </div>
       ) : (
         <div className="flow-tree">
-          <ViewTree parentId={null} prefix="" steps={steps} />
+          <ViewTree parentId={null} depth={1} steps={steps} />
         </div>
       )}
     </>
   );
+}
+
+function stepLabel(depth: number, siblingIndex: number, total: number): string {
+  if (total <= 1) return `Step ${depth}`;
+  const letter = String.fromCharCode(65 + siblingIndex);
+  return `Step ${depth} · ${letter}`;
 }
 
 // ============================================================
@@ -192,38 +198,43 @@ export default function PlatformProcesses() {
 // ============================================================
 function ViewTree({
   parentId,
-  prefix,
+  depth,
   steps
 }: {
   parentId: string | null;
-  prefix: string;
+  depth: number;
   steps: ProcessStep[];
 }) {
   const kids = childrenOf(parentId, steps);
   if (!kids.length) return null;
+  const branching = kids.length > 1;
   return (
-    <div className="flow-branch-list">
-      {kids.map((k, i) => {
-        const num = prefix ? `${prefix}.${i + 1}` : `${i + 1}`;
-        return (
-          <div key={k.id} className="flow-branch">
-            <div className="flow-card">
-              <div className="flow-card-index">{num}</div>
-              <div className="flow-card-body">
-                <div className="flow-card-title">
-                  {k.title || (
-                    <em style={{ opacity: 0.6 }}>Untitled step</em>
-                  )}
-                </div>
-                {k.description && (
-                  <div className="flow-card-desc">{k.description}</div>
-                )}
-              </div>
+    <div
+      className={`flow-branch-list${branching ? ' flow-branch-list-split' : ''}`}
+    >
+      {branching && (
+        <div className="flow-branch-label">
+          one of {kids.length} options
+        </div>
+      )}
+      {kids.map((k, i) => (
+        <div key={k.id} className="flow-branch">
+          <div className="flow-card">
+            <div className="flow-card-index">
+              {stepLabel(depth, i, kids.length)}
             </div>
-            <ViewTree parentId={k.id} prefix={num} steps={steps} />
+            <div className="flow-card-body">
+              <div className="flow-card-title">
+                {k.title || <em style={{ opacity: 0.6 }}>Untitled step</em>}
+              </div>
+              {k.description && (
+                <div className="flow-card-desc">{k.description}</div>
+              )}
+            </div>
           </div>
-        );
-      })}
+          <ViewTree parentId={k.id} depth={depth + 1} steps={steps} />
+        </div>
+      ))}
     </div>
   );
 }
@@ -233,35 +244,48 @@ function ViewTree({
 // ============================================================
 function EditTree({
   parentId,
-  prefix,
+  depth,
   steps,
   onAddChild,
   onChange,
   onRemove
 }: {
   parentId: string | null;
-  prefix: string;
+  depth: number;
   steps: ProcessStep[];
   onAddChild: (parentId: string | null) => void;
   onChange: (id: string, patch: Partial<ProcessStep>) => void;
   onRemove: (id: string) => void;
 }) {
   const kids = childrenOf(parentId, steps);
-  if (!kids.length) {
-    return null;
-  }
+  if (!kids.length) return null;
+  const branching = kids.length > 1;
   return (
-    <div className="flow-branch-list">
+    <div
+      className={`flow-branch-list${branching ? ' flow-branch-list-split' : ''}`}
+    >
+      {branching && (
+        <div className="flow-branch-label">
+          one of {kids.length} options
+        </div>
+      )}
       {kids.map((k, i) => {
-        const num = prefix ? `${prefix}.${i + 1}` : `${i + 1}`;
+        const label = stepLabel(depth, i, kids.length);
+        const childKids = childrenOf(k.id, steps);
+        const nextBtn =
+          childKids.length === 0
+            ? '+ Next step'
+            : childKids.length === 1
+              ? '+ Turn next step into options'
+              : '+ Another option';
         return (
           <div key={k.id} className="flow-branch flow-branch-edit">
             <div className="flow-card flow-card-edit">
-              <div className="flow-card-index">{num}</div>
+              <div className="flow-card-index">{label}</div>
               <div className="flow-card-body">
                 <input
                   value={k.title}
-                  placeholder={`Step ${num} — e.g. Open the app`}
+                  placeholder={`${label} — e.g. Open the app`}
                   onChange={(e) => onChange(k.id, { title: e.target.value })}
                 />
                 <textarea
@@ -277,7 +301,7 @@ function EditTree({
                     className="ghost small"
                     onClick={() => onAddChild(k.id)}
                   >
-                    + Sub-step
+                    {nextBtn}
                   </button>
                   <button
                     type="button"
@@ -293,7 +317,7 @@ function EditTree({
             </div>
             <EditTree
               parentId={k.id}
-              prefix={num}
+              depth={depth + 1}
               steps={steps}
               onAddChild={onAddChild}
               onChange={onChange}

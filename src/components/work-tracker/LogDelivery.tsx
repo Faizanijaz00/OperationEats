@@ -13,6 +13,14 @@ interface Props {
 
 type Toast = { type: 'success' | 'error'; message: string } | null;
 
+const KEY_NOTES_PLACEHOLDER = [
+  '• Anything worth remarking on in staff behaviour',
+  '• Any issues with the app',
+  '• Any potential point of leverage',
+  '• Any gaps in the system',
+  '• Any points in the process that we can leverage'
+].join('\n');
+
 export default function LogDelivery({ editingId, onDoneEditing }: Props) {
   const { state, addDelivery, updateDelivery } = useStore();
   const [platformId, setPlatformId] = useState('');
@@ -332,7 +340,8 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Anything worth remembering — customer behaviour, address issues, traffic, app glitches…"
+          placeholder={KEY_NOTES_PLACEHOLDER}
+          rows={6}
         />
 
         {extraOrders.map((o, i) => {
@@ -366,7 +375,8 @@ export default function LogDelivery({ editingId, onDoneEditing }: Props) {
               <textarea
                 value={o.notes}
                 onChange={(e) => updateExtra(i, { notes: e.target.value })}
-                placeholder={`Anything worth remembering for order ${orderNumber}…`}
+                placeholder={KEY_NOTES_PLACEHOLDER}
+                rows={6}
               />
             </div>
           );
